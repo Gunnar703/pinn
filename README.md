@@ -12,3 +12,6 @@ There will be a new branch for each phase of development. `main` will only conta
 - `deepxde`
 - `pytorch` (or other suitable machine learning framework, backend for `deepxde`)
 - `scipy`
+
+## Additional Notes
+`<N>dof.py` is an executable version of `analysis.ipynb`. It exists solely to be run on the GPU, whereas the `analysis.ipynb` file is provided for better readability ease of debugging.
