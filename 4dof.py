@@ -97,7 +97,8 @@ u_t = sol[:, N_DEGREES_OF_FREEDOM:]
 
 # %%
 ## Screen out training data
-time_indices   = np.arange( 0, len(t), len(t) // N_COLLOC_POINTS )
+# time_indices   = np.arange( 0, len(t), len(t) // N_COLLOC_POINTS )
+time_indices   = np.arange( 0, len(t), 1 )
 sensor_indices = [1, 3]
 
 tdata = t[time_indices]
@@ -112,6 +113,8 @@ for dim in range(N_DEGREES_OF_FREEDOM):
     ax[dim].plot(t, u[:, dim], label="Solution")
     if dim in sensor_indices:
         ax[dim].plot(tdata, udata[:, dim], label="Data", linestyle="None", marker=".")
+    else:
+        ax[dim].plot(tdata[0], udata[0, dim], label="Data", linestyle="None", marker=".")
     ax[dim].set_xlabel(r"$t$")
     ax[dim].set_ylabel(r"$u_{}(t)$".format(dim + 1))
     if dim == 0:
@@ -166,11 +169,15 @@ def system (t, u):
         -
         pt_force(t)
     ).permute((1, 0))
-    return alpha_pi * residual
+    return max(alpha_pi, 1.0) * residual
 
 bcs = [
-    dde.icbc.boundary_conditions.PointSetBC( tdata.reshape(-1, 1), udata[:, dim].reshape(-1, 1), component=dim )
-    for dim in sensor_indices
+    ( 
+        dde.icbc.boundary_conditions.PointSetBC( tdata.reshape(-1, 1), udata[:, dim].reshape(-1, 1), component=dim )
+    ) if (dim in sensor_indices) else (
+        dde.icbc.boundary_conditions.PointSetBC( tdata[0].reshape(-1, 1), udata[0, dim].reshape(-1, 1), component=dim )
+    )
+    for dim in range(N_DEGREES_OF_FREEDOM)
 ]
 
 data = dde.data.PDE(
@@ -192,7 +199,7 @@ model = dde.Model(data, net)
 model.compile("adam", lr=1e-4, external_trainable_variables=[E, alpha_pi])
 
 variable = dde.callbacks.VariableValue(
-  list(E) + [alpha_pi], period=1000, filename="variables.dat"
+  list(torch.abs(E)) + [max(alpha_pi, 1.0)], period=1000, filename="variables.dat"
 )
 
 checkpoint = dde.callbacks.ModelCheckpoint("model_files/checkpoints/model", period=10_000)
@@ -209,6 +216,8 @@ def plot():
         ax[dim].plot(t, u[:, dim], label="Solution", color='blue')
         if dim in sensor_indices:
             ax[dim].plot(tdata, udata[:, dim], label="Data", linestyle="None", marker=".", color='orange')
+        else:
+            ax[dim].plot(tdata[0], udata[0, dim], label="Data", linestyle="None", marker=".", color='orange')
         ax[dim].plot(t, upred[:, dim], label="Prediction", color='green')
         ax[dim].set_xlabel(r"$t$")
         ax[dim].set_ylabel(r"$u_{}(t)$".format(dim + 1))
