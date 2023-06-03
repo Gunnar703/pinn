@@ -37,7 +37,7 @@ print("Done.")
 ## Set hyperparameters
 np.random.seed(123)
 N_DEGREES_OF_FREEDOM = 4
-N_COLLOC_POINTS = 50
+N_COLLOC_POINTS = 60
 device = 'cuda'
 
 # %%
@@ -97,8 +97,8 @@ u_t = sol[:, N_DEGREES_OF_FREEDOM:]
 
 # %%
 ## Screen out training data
-# time_indices   = np.arange( 0, len(t), len(t) // N_COLLOC_POINTS )
-time_indices   = np.arange( 0, len(t), 1 )
+time_indices   = np.arange( 0, len(t), len(t) // N_COLLOC_POINTS )
+# time_indices   = np.arange( 0, len(t), 1 )
 sensor_indices = [1, 3]
 
 tdata = t[time_indices]
@@ -190,13 +190,18 @@ data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes        = [1] + 20*[32] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes        = [1] + 10*[20] + [N_DEGREES_OF_FREEDOM],
     activation         = "tanh",
     kernel_initializer = "Glorot uniform"
 )
 
 model = dde.Model(data, net)
-model.compile("adam", lr=1e-4, external_trainable_variables=[E, alpha_pi])
+model.compile(
+    "adam", 
+    lr=1e-3,
+    external_trainable_variables=[E, alpha_pi],
+    decay=("step", 1000, 1e-2)
+)
 
 variable = dde.callbacks.VariableValue(
   list(torch.abs(E)) + [max(alpha_pi, 1.0)], period=1000, filename="variables.dat"
@@ -228,7 +233,7 @@ def plot():
 
 checkpoint.on_epoch_begin = plot
 print("Done.")
-losshistory, train_state = model.train(iterations=2_000_000, callbacks=[variable, checkpoint])
+losshistory, train_state = model.train(iterations=600_000, callbacks=[variable, checkpoint])
 
 # %%
 print("Saving model...")
@@ -242,3 +247,8 @@ print("E = \n", E.detach())
 
 print("True E vector\n", "----------")
 print("EK = \n", e)
+
+# %%
+
+
+
