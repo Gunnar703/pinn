@@ -2,10 +2,10 @@ from PIL import Image
 import glob
 
 frames = []
-images = glob.glob("plots/train_history/epoch_*_prediction.png")
+images = glob.glob("plots/training/epoch_*_prediction.png")
 
 def sort_by_number(filename):
-    number = int(filename.split('_')[2].split('_')[0])  # Extract the number from the file name
+    number = int(filename.split('_')[1].split('_')[0])  # Extract the number from the file name
     return number
 
 sorted_images = sorted(images, key=sort_by_number)

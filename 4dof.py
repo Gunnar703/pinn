@@ -52,6 +52,7 @@ a1 = ( 2 * damp2 * omega2 - 2 * damp1 * omega1 ) / ( (omega2**2) -(omega1**2) )
 
 m = np.diag( np.ones(N_DEGREES_OF_FREEDOM) )
 e = np.random.rand(N_DEGREES_OF_FREEDOM)
+print(f"True E: {e}")
 
 first_diag = int( np.floor(N_DEGREES_OF_FREEDOM*3/4) )
 k_basis = np.transpose(np.array([
@@ -153,7 +154,8 @@ def system (t, u):
         y_t [:, dim] = dde.grad.jacobian( u, t, i=dim, j=0 ).squeeze()
         y_tt[:, dim] = dde.grad.hessian ( u, t, component=dim ).squeeze()
     
-    K = torch.abs( torch.matmul( E, K_basis ) )
+    E = torch.abs(E)
+    K = torch.matmul( E, K_basis )
     C = a0 * M + a1 * K
             
     residual = (

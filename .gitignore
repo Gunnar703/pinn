@@ -1,2 +1,3 @@
 plots/training/*
 model_files/checkpoints/*
+**/*.ps1
