@@ -154,8 +154,7 @@ def system (t, u):
         y_t [:, dim] = dde.grad.jacobian( u, t, i=dim, j=0 ).squeeze()
         y_tt[:, dim] = dde.grad.hessian ( u, t, component=dim ).squeeze()
     
-    E = torch.abs(E)
-    K = torch.matmul( E, K_basis )
+    K = torch.matmul( torch.abs(E), K_basis )
     C = a0 * M + a1 * K
             
     residual = (
