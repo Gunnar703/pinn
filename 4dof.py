@@ -157,7 +157,8 @@ def system (t, u):
         y_t [:, dim] = dde.grad.jacobian( u, t, i=dim, j=0 ).squeeze()
         y_tt[:, dim] = dde.grad.hessian ( u, t, component=dim ).squeeze()
     
-    K = torch.matmul( torch.abs(E), K_basis )
+    Y = torch.abs(E)
+    K = torch.matmul( Y, K_basis )
     C = a0 * M + a1 * K
             
     residual = (
@@ -169,7 +170,9 @@ def system (t, u):
         -
         pt_force(t)
     ).permute((1, 0))
-    return max(alpha_pi, 1.0) * residual
+
+    multiplier = torch.exp(alpha_pi) + 1  # ensure physics loss weight is at least 1
+    return multiplier * residual
 
 bcs = [
     ( 
@@ -184,13 +187,13 @@ data = dde.data.PDE(
     geometry     = geometry,
     pde          = system,
     bcs          = bcs,
-    num_domain   = 10000,
+    num_domain   = 5000,
     num_boundary = 2,
     num_test     = 5
 )
 
 net = dde.nn.FNN(
-    layer_sizes        = [1] + 10*[20] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes        = [1] + 20*[32] + [N_DEGREES_OF_FREEDOM],
     activation         = "tanh",
     kernel_initializer = "Glorot uniform"
 )
@@ -203,7 +206,7 @@ model.compile(
 )
 
 variable = dde.callbacks.VariableValue(
-  list(torch.abs(E)) + [max(alpha_pi, 1.0)], period=1000, filename="variables.dat"
+  list(E) + [alpha_pi], period=1000, filename="variables.dat"
 )
 
 checkpoint = dde.callbacks.ModelCheckpoint("model_files/checkpoints/model", period=10_000)
