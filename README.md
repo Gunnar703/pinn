@@ -1,7 +1,7 @@
 # pinn
 
 ## About
-This repository was created to keep track of my experiments while participating in Embry-Riddle Aeronautical University's 2023 Summer Undergraduate Research Fellowship. It is intended to be private and solely for the reference of those involved in the project.
+This repository was created to keep track of my experiments while participating in Embry-Riddle Aeronautical University's 2023 Summer Undergraduate Research Fellowship. At the moment, it is intended only for the use of those directly involved in the project.
 
 ## Branches
 There will be a new branch for each phase of development. `main` will only contain the latest, most successful version of the code.
