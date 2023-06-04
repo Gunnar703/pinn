@@ -235,7 +235,7 @@ def plot():
 
 checkpoint.on_epoch_begin = plot
 print("Done.")
-losshistory, train_state = model.train(iterations=600_000, callbacks=[variable, checkpoint])
+losshistory, train_state = model.train(iterations=int(1e6), callbacks=[variable, checkpoint])
 
 # %%
 print("Saving model...")
@@ -249,8 +249,3 @@ print("E = \n", E.detach())
 
 print("True E vector\n", "----------")
 print("EK = \n", e)
-
-# %%
-
-
-
