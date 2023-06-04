@@ -193,7 +193,7 @@ data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes        = [1] + 20*[32] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes        = [1] + 30*[50] + [N_DEGREES_OF_FREEDOM],
     activation         = "tanh",
     kernel_initializer = "Glorot uniform"
 )
@@ -235,7 +235,7 @@ def plot():
 
 checkpoint.on_epoch_begin = plot
 print("Done.")
-losshistory, train_state = model.train(iterations=int(1e6), callbacks=[variable, checkpoint])
+losshistory, train_state = model.train(iterations=int(2e6), callbacks=[variable, checkpoint])
 
 # %%
 print("Saving model...")
@@ -249,3 +249,8 @@ print("E = \n", E.detach())
 
 print("True E vector\n", "----------")
 print("EK = \n", e)
+
+# %%
+
+
+
