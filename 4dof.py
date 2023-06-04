@@ -198,9 +198,8 @@ net = dde.nn.FNN(
 model = dde.Model(data, net)
 model.compile(
     "adam", 
-    lr=1e-2,
-    external_trainable_variables=[E, alpha_pi],
-    decay=("step", 50_000, 1e-1)
+    lr=5e-5,
+    external_trainable_variables=[E, alpha_pi]
 )
 
 variable = dde.callbacks.VariableValue(
