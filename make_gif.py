@@ -13,8 +13,11 @@ sorted_images = sorted(images, key=sort_by_number)
 for image in sorted_images:
     frames.append(Image.open(image))
 
-frames[0].save('training.gif', format='GIF',
-               append_images=frames[1:],
-               save_all=True,
-               duration=45,
-               loop=0)
+frames[0].save(
+    'training.gif', 
+    format='GIF',
+    append_images=frames[1:],
+    save_all=True,
+    duration=300,
+    loop=0
+)
