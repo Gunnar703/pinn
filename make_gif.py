@@ -18,6 +18,6 @@ frames[0].save(
     format='GIF',
     append_images=frames[1:],
     save_all=True,
-    duration=300,
+    duration=100,
     loop=0
 )
