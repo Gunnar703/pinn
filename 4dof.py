@@ -217,7 +217,7 @@ variable = dde.callbacks.VariableValue(
 )
 
 checkpoint = dde.callbacks.ModelCheckpoint(
-    "model_files/checkpoints/model", period=10_000
+    "model_files/checkpoints/model", period=1_000
 )
 
 epoch = 0
@@ -232,7 +232,7 @@ def plot():
     plt.title(
         f"Epoch: {epoch}\nE={E_learned.detach().cpu() * 1e-6: .2f} " + r"$\times 10^6$"
     )
-    u_to_plot = model.predict(data["t"]).detach().cpu()
+    u_to_plot = model.predict(data["t"].reshape(-1, 1)).detach().cpu()
     for dim in range(4):
         ax = fig.add_suplot(gs[dim])
 
