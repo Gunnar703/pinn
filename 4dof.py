@@ -169,7 +169,7 @@ def system(t, u):
         y_t[:, dim] = dde.grad.jacobian(u, t, i=dim, j=0).squeeze()
         y_tt[:, dim] = dde.grad.hessian(u, t, component=dim).squeeze()
 
-    E = torch.abs(E_learned) * 1e6
+    E = torch.abs(E_learned) * 1e7
     K = K_basis * E
     C = data["Damp_param"][0] * M + data["Damp_param"][1] * K
 
@@ -254,12 +254,13 @@ def plot():
     epoch += 1
     if checkpoint.epochs_since_last_save + 1 < checkpoint.period:
         return
-    fig = plt.figure(figsize=(5, 10))
+
+    fig, axes = plt.subplots(4, 1, figsize=(8, 6))
     plt.title(
         f"Epoch: {epoch}"
         + "\n"
-        + f"E={E_learned.detach().cpu(): .2f} "
-        + r"$\times 10^6$"
+        + f"E = {E_learned.detach().cpu(): .4f} "
+        + r"$\times 10^7$ Pa"
     )
 
     def dydx(x, y):
@@ -270,7 +271,7 @@ def plot():
 
     u_to_plot = model.predict(data["t"].reshape(-1, 1), operator=dydx)
     for dim in range(4):
-        ax = fig.add_subplot(gs[dim])
+        ax = axes[dim]
 
         ax.plot(data["t"], u_to_plot[:, dim], label="Prediction", color="black")
 
@@ -282,7 +283,7 @@ def plot():
             ax.plot(
                 data["t"],
                 data["Vel_3_2D"],
-                label="True",
+                label="Data (OPS)",
                 marker="x",
                 markersize=1,
                 linestyle="None",
@@ -292,7 +293,7 @@ def plot():
             ax.plot(
                 data["t"],
                 data["Vel_4_2D"],
-                label="True",
+                label="Data (OPS)",
                 marker="x",
                 markersize=1,
                 linestyle="None",
@@ -302,7 +303,7 @@ def plot():
             ax.plot(
                 0,
                 0,
-                label="True",
+                label="Data (OPS)",
                 marker="x",
                 markersize=1,
                 linestyle="None",
@@ -310,12 +311,10 @@ def plot():
             )
 
         ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
-        if dim != 3:
-            ax.xaxis.set_ticklabels([])
         if dim == 3:
             ax.set_xlabel(r"Time ($t$)")
-        ax.legend()
-    plt.savefig(f"plots/training/epoch_{epoch}_prediction.png")
+        ax.legend(ncol=3, loc="upper center")
+    plt.savefig(f"plots/training/epoch_{epoch}_prediction.png", bbox_inches="tight")
     plt.close()
 
 
@@ -337,5 +336,3 @@ print("E = \n", E_learned.detach())
 
 print("True E vector\n", "----------")
 print("EK = \n", data["Y"])
-
-# %%
