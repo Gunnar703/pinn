@@ -112,11 +112,10 @@ for dim in range(4):
     ax = fig.add_subplot(gs[dim])
     ax.plot(tsol, usol_derivative[dim], label="RK45")
 
-    match dim:
-        case 1:
-            ax.plot(data["t"], data["Vel_3_2D"], label="OpenSees")
-        case 3:
-            ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
+    if dim == 1:
+        ax.plot(data["t"], data["Vel_3_2D"], label="OpenSees")
+    elif dim == 3:
+        ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
     ax.legend()
 
 # %%
@@ -243,37 +242,36 @@ def plot():
         ax.plot(tsol, usol_derivative[dim], label="Solution (RK-45)", color="gray")
 
         # Plot given data
-        match dim:
-            case 1:
-                ax.plot(
-                    data["t"],
-                    data["Vel_3_2D"],
-                    label="True",
-                    marker="x",
-                    markersize=1,
-                    linestyle="None",
-                    color="orange",
-                )
-            case 3:
-                ax.plot(
-                    data["t"],
-                    data["Vel_4_2D"],
-                    label="True",
-                    marker="x",
-                    markersize=1,
-                    linestyle="None",
-                    color="orange",
-                )
-            case _:
-                ax.plot(
-                    0,
-                    0,
-                    label="True",
-                    marker="x",
-                    markersize=1,
-                    linestyle="None",
-                    color="orange",
-                )
+        if dim == 1:
+            ax.plot(
+                data["t"],
+                data["Vel_3_2D"],
+                label="True",
+                marker="x",
+                markersize=1,
+                linestyle="None",
+                color="orange",
+            )
+        elif dim == 3:
+            ax.plot(
+                data["t"],
+                data["Vel_4_2D"],
+                label="True",
+                marker="x",
+                markersize=1,
+                linestyle="None",
+                color="orange",
+            )
+        else:
+            ax.plot(
+                0,
+                0,
+                label="True",
+                marker="x",
+                markersize=1,
+                linestyle="None",
+                color="orange",
+            )
 
         ax.set_ylabel(r"$u_%s(t)$" % (dim))
         if dim != 3:
