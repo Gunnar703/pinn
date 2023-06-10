@@ -1,31 +1,6 @@
-# %% [markdown]
-# ## Four Degree-of-Freedom System
-#
-# ### Known
-# - $ \left[ M \right] $
-# - $ a_0,\ a_1 $
-# - $ \left[ C \right] = a_0 \left[ M \right] + a_1 \left[ K \right] $
-# - $ K_{ij} \geq 0\ \forall (i, j) \in \mathbb{N} \times \mathbb{N} $
-# - $ \left[ K \right] $ is sparse
-# - $ \left[ K \right] = \sum_{i=1}^4 \left[ \mathbb{K}_\text{basis} \right]_i \cdot E_i $
-#
-# ### Unknown
-# - $ \mathbb{E} = \bigcup_{i=1}^4 E_i $
-# - $ \alpha_\pi $
-#
-# ### Constraints
-# - $ \mathcal{J}_\mathcal{D} = \frac{1}{2} \sum_{i=1,3} \left( \hat{u}_i - u_i \right)^2 $ (data loss)
-# - $ E_{ij} \geq 0\ \forall (i, j) \in \mathbb{N} \times \mathbb{N} $ (hard constraint)
-# - $ \mathcal{J}_\pi = \alpha_\pi \mathcal{L}_2\left( \left[ M \right]\left[ \ddot{u} \right] + \left[ C \right]\left[ \dot{u} \right] + \left[ K \right]\left[ u \right] - \left[ f(t) \right] \right) $
-# - $ \mathcal{J}_\mathcal{S} = \mathcal{L}_1\left( \left[ K \right] \right) $ (sparsity enforcement, not used here because the 4DOF K-matrix is not actually sparse)
-#
-# ### Definitions
-# $\mathcal{L}_1$: Taxicab norm\
-# $\mathcal{L}_2$: Euclidiean norm
-
-# %%
-print("Importing libraries...")
 ## Import Libraries
+
+print("Importing libraries...")
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,18 +10,70 @@ import torch
 import torch.nn as nn
 from scipy.integrate import solve_ivp
 from generate_data import get_data
+import argparse
 
 print("Done.")
+
+# Create the argument parser
+parser = argparse.ArgumentParser()
+
+# Add the command line argument
+parser.add_argument(
+    "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
+)
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Access the value of the command line argument
+checkpoint_interval = args.checkpoint_interval
+
+# Print the checkpoint interval
+print(f"Checkpoint interval: {checkpoint_interval}")
 
 ## Set hyperparameters
 np.random.seed(123)
 N_DEGREES_OF_FREEDOM = 4
-N_COLLOC_POINTS = 60
 device = "cuda"
 
-# %%
-print("Getting training data...")
+
+## Ensure necessary files exist
+def create_folder(fname):
+    print(f"Necessary folder {dir[0]} not found. Creating...")
+    os.mkdir(fname)
+    print("Done.")
+
+
+necessary_directories = [["model_files", "checkpoints"], ["plots", "training"]]
+folders_created = []
+for dir in necessary_directories:
+    if not os.path.isdir(dir[0]):
+        create_folder(dir[0])
+        folders_created.append(dir[0])
+    if not os.path.isdir(f"{dir[0]}/{dir[1]}"):
+        create_folder(f"{dir[0]}/{dir[1]}")
+        folders_created.append(f"{dir[0]}/{dir[1]}")
+print("Created folders:" + "\n> ".join(["", *folders_created]))
+
+## Ensure output files (model_files/checkpoints, plots/training) are empty.
+for path in ["/".join(entry) for entry in necessary_directories]:
+    print(f"Checking {path}...")
+    files = os.listdir(path)
+    if not files:
+        continue
+    print(f"{path} not empty. Deleting contents...")
+    for file in files:
+        filepath = os.path.join(path, file)
+        try:
+            os.unlink(filepath)
+        except Exception as e:
+            print("Failed to delete %s. Reason: %s" % (filepath, e))
+    print("Done.")
+
+
 ## Get training data
+
+print("Getting training data...")
 data_folder = "data"
 required_files = [
     "C",
@@ -71,7 +98,6 @@ data = {
 print("Done.")
 
 
-# %%
 def force_magnitude(t):
     return np.interp(t, data["t"], data["load"]) * 1e3
 
@@ -143,7 +169,7 @@ def system(t, u):
         y_t[:, dim] = dde.grad.jacobian(u, t, i=dim, j=0).squeeze()
         y_tt[:, dim] = dde.grad.hessian(u, t, component=dim).squeeze()
 
-    E = torch.abs(E_learned)
+    E = torch.abs(E_learned) * 1e6
     K = K_basis * E
     C = data["Damp_param"][0] * M + data["Damp_param"][1] * K
 
@@ -217,7 +243,7 @@ variable = dde.callbacks.VariableValue(
 )
 
 checkpoint = dde.callbacks.ModelCheckpoint(
-    "model_files/checkpoints/model", period=10_000
+    "model_files/checkpoints/model", period=checkpoint_interval
 )
 
 epoch = 0
@@ -232,7 +258,7 @@ def plot():
     plt.title(
         f"Epoch: {epoch}"
         + "\n"
-        + f"E={E_learned.detach().cpu() * 1e-6: .2f} "
+        + f"E={E_learned.detach().cpu(): .2f} "
         + r"$\times 10^6$"
     )
 
