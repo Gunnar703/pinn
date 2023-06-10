@@ -144,7 +144,6 @@ for dim in range(4):
         ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
     ax.legend()
 
-# %%
 ## Set up DeepXDE model
 print("Setting up DeepXDE model...")
 # Define domain
@@ -185,8 +184,7 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    multiplier = 2  # multiply physics loss by 2. not having this as a weight anymore since the optimizer just tried to minimize it.
-    return multiplier * residual
+    return residual
 
 
 def differentiate_u(t, u, component):
@@ -226,7 +224,12 @@ bcs += [
 ]
 
 pde_data = dde.data.PDE(
-    geometry=geometry, pde=system, bcs=bcs, num_domain=5000, num_boundary=2, num_test=5
+    geometry=geometry,
+    pde=system,
+    bcs=bcs,
+    num_domain=1000,
+    num_boundary=2,
+    num_test=100,
 )
 
 net = dde.nn.FNN(
@@ -234,9 +237,15 @@ net = dde.nn.FNN(
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
+net.apply_output_transform(lambda x, y: y * 1e-4)
 
 model = dde.Model(pde_data, net)
-model.compile("adam", lr=5e-5, external_trainable_variables=[E_learned])
+model.compile(
+    "adam",
+    lr=5e-5,
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-11, 1e2, 1e2, 1e4, 1e2, 1, 1, 1, 1],
+)
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=1000, filename="variables.dat"
@@ -326,7 +335,6 @@ losshistory, train_state = model.train(
     iterations=int(2e6), callbacks=[variable, checkpoint]
 )
 
-# %%
 print("Saving model...")
 model.save("model_files/model")
 dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
