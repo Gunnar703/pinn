@@ -217,7 +217,7 @@ variable = dde.callbacks.VariableValue(
 )
 
 checkpoint = dde.callbacks.ModelCheckpoint(
-    "model_files/checkpoints/model", period=1_000
+    "model_files/checkpoints/model", period=10_000
 )
 
 epoch = 0
@@ -230,11 +230,21 @@ def plot():
         return
     fig = plt.figure(figsize=(5, 10))
     plt.title(
-        f"Epoch: {epoch}\nE={E_learned.detach().cpu() * 1e-6: .2f} " + r"$\times 10^6$"
+        f"Epoch: {epoch}"
+        + "\n"
+        + f"E={E_learned.detach().cpu() * 1e-6: .2f} "
+        + r"$\times 10^6$"
     )
-    u_to_plot = model.predict(data["t"].reshape(-1, 1)).detach().cpu()
+
+    def dydx(x, y):
+        ret = torch.zeros_like(y)
+        for i in range(4):
+            ret[:, i] = dde.grad.jacobian(y, x, i=i, j=0).squeeze()
+        return ret
+
+    u_to_plot = model.predict(data["t"].reshape(-1, 1), operator=dydx)
     for dim in range(4):
-        ax = fig.add_suplot(gs[dim])
+        ax = fig.add_subplot(gs[dim])
 
         ax.plot(data["t"], u_to_plot[:, dim], label="Prediction", color="black")
 
@@ -273,7 +283,7 @@ def plot():
                 color="orange",
             )
 
-        ax.set_ylabel(r"$u_%s(t)$" % (dim))
+        ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
         if dim != 3:
             ax.xaxis.set_ticklabels([])
         if dim == 3:
