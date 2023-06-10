@@ -242,7 +242,7 @@ net.apply_output_transform(lambda x, y: y * 1e-4)
 model = dde.Model(pde_data, net)
 model.compile(
     "adam",
-    lr=5e-5,
+    lr=1e-3,
     external_trainable_variables=[E_learned],
     loss_weights=[1e-11, 1e2, 1e2, 1e4, 1e2, 1, 1, 1, 1],
 )
