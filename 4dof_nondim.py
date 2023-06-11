@@ -103,12 +103,12 @@ print("Done.")
 ## Non-dimensionalize data
 t_char = max(data["t"])  # characteristic time measurement
 u_char = max(
-    np.ptp(data["Vel_3_2D"]), np.ptp(data["Vel_4_2D"])
-)  # characteristic displacement measurement - chosen so that velocity is in [-1, 1]
+    np.max(data["Disp_3_2D"]), np.max(data["Disp_4_2D"])
+)  # characteristic displacement measurement - chosen so that displacement is in [-1, 1]
 
 data["t"] /= t_char
-data["Vel_3_2D"] *= t_char / u_char
-data["Vel_4_2D"] *= t_char / u_char
+data["Disp_3_2D"] /= u_char
+data["Disp_4_2D"] /= u_char
 
 
 def non_dimensional_force(t_nd):
@@ -168,18 +168,19 @@ axes[-1].set_xlabel(r"Time ($t\ /\ t_c$)")
 fig.text(
     0.04,
     0.5,
-    r"Velocity ($\dot{u}\ t_c\ /\ u_c$)",
+    r"Displacement ($\dot{u}\ t_c\ /\ u_c$)",
     va="center",
     rotation="vertical",
 )
+
 for dim in range(4):
     ax = axes[dim]
-    ax.plot(tsol, usol_derivative[dim], label="RK45 (Solution)")
+    ax.plot(tsol, usol[dim], label="RK45 (Solution)")
 
     if dim == 1:
         ax.plot(
             data["t"],
-            data["Vel_3_2D"],
+            data["Disp_3_2D"],
             label="OpenSees (Data)",
             linestyle="None",
             marker="x",
@@ -188,7 +189,7 @@ for dim in range(4):
     elif dim == 3:
         ax.plot(
             data["t"],
-            data["Vel_4_2D"],
+            data["Disp_4_2D"],
             label="OpenSees (Data)",
             linestyle="None",
             marker="x",
@@ -251,36 +252,29 @@ def differentiate_u(t, u, component):
     return dde.grad.jacobian(u, t, i=component)
 
 
-## Velocity boundary conditions
-bcs = [
-    # Enforce y-velocity of node 3
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_3_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 1)),
-    ),
-    # Enforce y-velocity of node 4
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_4_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 3)),
-    ),
-    # Set initial x-velocity of node 3 to 0
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 0))
-    ),
-    # Set initial x-velocity of node 4 to 0
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 2))
-    ),
-]
+idx = np.unique(
+    np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
+)
+idx = [int(item) for item in idx]
+vel_train_data = {
+    "t": data["t"][idx],
+    "Disp_3_2D": data["Disp_3_2D"][idx],
+    "Disp_4_2D": data["Disp_4_2D"][idx],
+}
 
-# Position boundary conditions. Start at (0, 0) always
-bcs += [
+# Position boundary conditions. Start at (0, 0) always.
+bcs = [
     dde.icbc.boundary_conditions.PointSetBC(
         np.array([[0]]), np.array([[0]]), component=dim
     )
-    for dim in range(N_DEGREES_OF_FREEDOM)
+    for dim in (0, 2)
+] + [
+    dde.icbc.boundary_conditions.PointSetBC(
+        data["t"].reshape(-1, 1), vel_train_data["Disp_3_2D"], component=1
+    ),
+    dde.icbc.boundary_conditions.PointSetBC(
+        data["t"].reshape(-1, 1), vel_train_data["Disp_4_2D"], component=3
+    ),
 ]
 
 pde_data = dde.data.PDE(
@@ -304,15 +298,11 @@ model.compile(
     lr=1e-4,
     external_trainable_variables=E_learned,
     loss_weights=[
-        1e-10,  # residual/pde loss
-        1e2,  # y-velocity of node 3
-        1e2,  # y-velocity of node 4
-        1e2,  # x-velocity of node 3 I.C.
-        1e2,  # x-velocity of node 4 I.C.
-        1e2,  # x-displacement of node 3 I.C.
-        1e2,  # y-displacement of node 3 I.C.
-        1e2,  # x-displacement of node 4 I.C.
-        1e2,  # y-displacement of node 4 I.C.
+        1,  # residual/pde loss
+        1,  # x-displacement of node 3 I.C.
+        1,  # x-displacement of node 4 I.C.
+        1,  # y-displacement of node 3
+        1,  # y-displacement of node 4
     ],
 )
 
@@ -323,9 +313,9 @@ variable_callback = dde.callbacks.VariableValue(
 plotter_callback = PlotterCallback(
     period=checkpoint_interval,
     filepath=f"plots/training",
-    data=data,
+    data=vel_train_data,
     tsol=tsol,
-    usol_derivative=usol_derivative,
+    usol=usol,
 )
 
 print("Done.")

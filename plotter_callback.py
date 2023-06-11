@@ -4,14 +4,14 @@ import torch
 
 
 class PlotterCallback(dde.callbacks.Callback):
-    def __init__(self, period, filepath, data, tsol, usol_derivative):
+    def __init__(self, period, filepath, data, tsol, usol):
         super().__init__()
         self.period = period
         self.filepath = filepath
         self.epoch = -1
         self.data = data
         self.tsol = tsol
-        self.usol_derivative = usol_derivative
+        self.usol = usol
 
     def on_epoch_end(self):
         self.epoch += 1  # increment epoch counter
@@ -20,9 +20,7 @@ class PlotterCallback(dde.callbacks.Callback):
         fig, axes = plt.subplots(4, 1, figsize=(8, 6))
         fig.suptitle(f"Epoch: {self.epoch}" + "\n")
 
-        v_pred = self.model.predict(
-            self.data["t"].reshape(-1, 1), operator=self.differentiate_model_output
-        )
+        v_pred = self.model.predict(self.data["t"].reshape(-1, 1))
         for dim in range(4):
             ax = axes[dim]
 
@@ -31,7 +29,7 @@ class PlotterCallback(dde.callbacks.Callback):
             # Plot Solution Data
             ax.plot(
                 self.tsol,
-                self.usol_derivative[dim],
+                self.usol[dim],
                 label="Solution (RK-45)",
                 color="gray",
             )
@@ -40,7 +38,7 @@ class PlotterCallback(dde.callbacks.Callback):
             if dim == 1:
                 ax.plot(
                     self.data["t"],
-                    self.data["Vel_3_2D"],
+                    self.data["Disp_3_2D"],
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,
@@ -50,7 +48,7 @@ class PlotterCallback(dde.callbacks.Callback):
             elif dim == 3:
                 ax.plot(
                     self.data["t"],
-                    self.data["Vel_4_2D"],
+                    self.data["Disp_4_2D"],
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,
@@ -68,7 +66,7 @@ class PlotterCallback(dde.callbacks.Callback):
                     color="orange",
                 )
 
-            ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
+            ax.set_ylabel(r"$u_%s(t)$" % (dim))
             if dim == 3:
                 ax.set_xlabel(r"Time ($t$)")
             if dim == 0:
