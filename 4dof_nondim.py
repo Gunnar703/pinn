@@ -252,15 +252,15 @@ def differentiate_u(t, u, component):
     return dde.grad.jacobian(u, t, i=component)
 
 
-# idx = np.unique(
-#     np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
-# )
-# idx = [int(item) for item in idx]
-# vel_train_data = {
-#     "t": data["t"][idx],
-#     "Disp_3_2D": data["Disp_3_2D"][idx],
-#     "Disp_4_2D": data["Disp_4_2D"][idx],
-# }
+idx = np.unique(
+    np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
+)
+idx = [int(item) for item in idx]
+vel_train_data = {
+    "t": data["t"][idx],
+    "Disp_3_2D": data["Disp_3_2D"][idx],
+    "Disp_4_2D": data["Disp_4_2D"][idx],
+}
 
 # new_idx = vel_train_data["t"].argsort()
 vel_train_data = {
@@ -294,7 +294,7 @@ pde_data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 20 * [100] + [4],
+    layer_sizes=[1] + 50 * [32] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
