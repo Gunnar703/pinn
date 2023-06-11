@@ -265,12 +265,11 @@ def plot():
         return
 
     fig, axes = plt.subplots(4, 1, figsize=(8, 6))
-    fig.suptitle(
+    plt.title(
         f"Epoch: {epoch}"
         + "\n"
         + f"E = {E_learned.detach().cpu(): .4f} "
         + r"$\times 10^7$ Pa"
-        + "\n"
     )
 
     def dydx(x, y):
@@ -323,8 +322,7 @@ def plot():
         ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
         if dim == 3:
             ax.set_xlabel(r"Time ($t$)")
-        if dim == 0:
-            ax.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.25))
+        ax.legend(ncol=3, loc="upper center")
     plt.savefig(f"plots/training/epoch_{epoch}_prediction.png", bbox_inches="tight")
     plt.close()
 
