@@ -305,7 +305,7 @@ model.compile(
     lr=1e-4,
     external_trainable_variables=E_learned,
     loss_weights=[
-        1,  # residual/pde loss
+        1e-4,  # residual/pde loss
         1e9,  # x-displacement of node 3 I.C.
         1e9,  # x-displacement of node 4 I.C.
         1e7,  # y-displacement of node 3
