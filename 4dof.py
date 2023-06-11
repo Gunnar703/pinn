@@ -12,6 +12,8 @@ from scipy.integrate import solve_ivp
 from generate_data import get_data
 import argparse
 
+from plotter_callback import PlotterCallback
+
 print("Done.")
 
 # Create the argument parser
@@ -132,17 +134,17 @@ tsol = sol.t
 usol = sol.y[:4]
 usol_derivative = sol.y[4:]
 
-gs = gridspec.GridSpec(4, 1, height_ratios=np.ones(4), hspace=0)
-fig = plt.figure(figsize=(5, 10))
-for dim in range(4):
-    ax = fig.add_subplot(gs[dim])
-    ax.plot(tsol, usol_derivative[dim], label="RK45")
+# gs = gridspec.GridSpec(4, 1, height_ratios=np.ones(4), hspace=0)
+# fig = plt.figure(figsize=(5, 10))
+# for dim in range(4):
+#     ax = fig.add_subplot(gs[dim])
+#     ax.plot(tsol, usol_derivative[dim], label="RK45")
 
-    if dim == 1:
-        ax.plot(data["t"], data["Vel_3_2D"], label="OpenSees")
-    elif dim == 3:
-        ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
-    ax.legend()
+#     if dim == 1:
+#         ax.plot(data["t"], data["Vel_3_2D"], label="OpenSees")
+#     elif dim == 3:
+#         ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
+#     ax.legend()
 
 ## Set up DeepXDE model
 print("Setting up DeepXDE model...")
@@ -248,89 +250,20 @@ model.compile(
 )
 
 variable = dde.callbacks.VariableValue(
-    [E_learned], period=1000, filename="variables.dat"
+    [E_learned], period=checkpoint_interval, filename="variables.dat"
 )
 
-checkpoint = dde.callbacks.ModelCheckpoint(
-    "model_files/checkpoints/model", period=checkpoint_interval
+plotter_callback = PlotterCallback(
+    period=checkpoint_interval,
+    filepath="plots/training",
+    data=data,
+    tsol=tsol,
+    usol=usol_derivative,
 )
 
-epoch = 0
-
-
-def plot():
-    global epoch
-    epoch += 1
-    if checkpoint.epochs_since_last_save + 1 < checkpoint.period:
-        return
-
-    fig, axes = plt.subplots(4, 1, figsize=(8, 6))
-    plt.title(
-        f"Epoch: {epoch}"
-        + "\n"
-        + f"E = {E_learned.detach().cpu(): .4f} "
-        + r"$\times 10^7$ Pa"
-    )
-
-    def dydx(x, y):
-        ret = torch.zeros_like(y)
-        for i in range(4):
-            ret[:, i] = dde.grad.jacobian(y, x, i=i, j=0).squeeze()
-        return ret
-
-    u_to_plot = model.predict(data["t"].reshape(-1, 1), operator=dydx)
-    for dim in range(4):
-        ax = axes[dim]
-
-        ax.plot(data["t"], u_to_plot[:, dim], label="Prediction", color="black")
-
-        # Plot Solution Data
-        ax.plot(tsol, usol_derivative[dim], label="Solution (RK-45)", color="gray")
-
-        # Plot given data
-        if dim == 1:
-            ax.plot(
-                data["t"],
-                data["Vel_3_2D"],
-                label="Data (OPS)",
-                marker="x",
-                markersize=1,
-                linestyle="None",
-                color="orange",
-            )
-        elif dim == 3:
-            ax.plot(
-                data["t"],
-                data["Vel_4_2D"],
-                label="Data (OPS)",
-                marker="x",
-                markersize=1,
-                linestyle="None",
-                color="orange",
-            )
-        else:
-            ax.plot(
-                0,
-                0,
-                label="Data (OPS)",
-                marker="x",
-                markersize=1,
-                linestyle="None",
-                color="orange",
-            )
-
-        ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
-        if dim == 3:
-            ax.set_xlabel(r"Time ($t$)")
-        ax.legend(ncol=3, loc="upper center")
-    plt.savefig(f"plots/training/epoch_{epoch}_prediction.png", bbox_inches="tight")
-    plt.close()
-
-
-checkpoint.on_epoch_begin = plot
 print("Done.")
 losshistory, train_state = model.train(
-    iterations=int(2e6), callbacks=[variable, checkpoint]
+    iterations=int(2e6), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")

@@ -20,7 +20,9 @@ class PlotterCallback(dde.callbacks.Callback):
         fig, axes = plt.subplots(4, 1, figsize=(8, 6))
         fig.suptitle(f"Epoch: {self.epoch}" + "\n")
 
-        v_pred = self.model.predict(self.data["t"].reshape(-1, 1))
+        v_pred = self.model.predict(
+            self.data["t"].reshape(-1, 1), operator=self.differentiate_model_output
+        )
         for dim in range(4):
             ax = axes[dim]
 
@@ -38,7 +40,7 @@ class PlotterCallback(dde.callbacks.Callback):
             if dim == 1:
                 ax.plot(
                     self.data["t"],
-                    self.data["Disp_3_2D"],
+                    self.data["Vel_3_2D"],
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,
@@ -48,7 +50,7 @@ class PlotterCallback(dde.callbacks.Callback):
             elif dim == 3:
                 ax.plot(
                     self.data["t"],
-                    self.data["Disp_4_2D"],
+                    self.data["Vel_4_2D"],
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,
@@ -66,7 +68,7 @@ class PlotterCallback(dde.callbacks.Callback):
                     color="orange",
                 )
 
-            ax.set_ylabel(r"$u_%s(t)$" % (dim))
+            ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
             if dim == 3:
                 ax.set_xlabel(r"Time ($t$)")
             if dim == 0:
