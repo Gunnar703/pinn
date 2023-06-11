@@ -253,7 +253,7 @@ def differentiate_u(t, u, component):
 
 
 idx = np.unique(
-    np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
+    np.floor(np.sin(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
 )
 idx = [int(item) for item in idx]
 vel_train_data = {
@@ -264,9 +264,9 @@ vel_train_data = {
 
 new_idx = vel_train_data["t"].argsort()
 vel_train_data = {
-    "t": data["t"],
-    "Disp_3_2D": data["Disp_3_2D"],
-    "Disp_4_2D": data["Disp_4_2D"],
+    "t": data["t"][new_idx],
+    "Disp_3_2D": data["Disp_3_2D"][new_idx],
+    "Disp_4_2D": data["Disp_4_2D"][new_idx],
 }
 
 # Position boundary conditions. Start at (0, 0) always.
@@ -305,11 +305,11 @@ model.compile(
     lr=1e-4,
     external_trainable_variables=E_learned,
     loss_weights=[
-        1e-4,  # residual/pde loss
-        1,  # x-displacement of node 3 I.C.
-        1,  # x-displacement of node 4 I.C.
-        1e2,  # y-displacement of node 3
-        1e1,  # y-displacement of node 4
+        1,  # residual/pde loss
+        1e9,  # x-displacement of node 3 I.C.
+        1e9,  # x-displacement of node 4 I.C.
+        1e7,  # y-displacement of node 3
+        1e7,  # y-displacement of node 4
     ],
 )
 
