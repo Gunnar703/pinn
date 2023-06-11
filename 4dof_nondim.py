@@ -252,21 +252,21 @@ def differentiate_u(t, u, component):
     return dde.grad.jacobian(u, t, i=component)
 
 
-idx = np.unique(
-    np.floor(np.sin(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
-)
-idx = [int(item) for item in idx]
-vel_train_data = {
-    "t": data["t"][idx],
-    "Disp_3_2D": data["Disp_3_2D"][idx],
-    "Disp_4_2D": data["Disp_4_2D"][idx],
-}
+# idx = np.unique(
+#     np.floor(np.sin(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
+# )
+# idx = [int(item) for item in idx]
+# vel_train_data = {
+#     "t": data["t"][idx],
+#     "Disp_3_2D": data["Disp_3_2D"][idx],
+#     "Disp_4_2D": data["Disp_4_2D"][idx],
+# }
 
-new_idx = vel_train_data["t"].argsort()
+# new_idx = vel_train_data["t"].argsort()
 vel_train_data = {
-    "t": data["t"][new_idx],
-    "Disp_3_2D": data["Disp_3_2D"][new_idx],
-    "Disp_4_2D": data["Disp_4_2D"][new_idx],
+    "t": data["t"],
+    "Disp_3_2D": data["Disp_3_2D"],
+    "Disp_4_2D": data["Disp_4_2D"],
 }
 
 # Position boundary conditions. Start at (0, 0) always.
