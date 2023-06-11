@@ -37,6 +37,12 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     ops.recorder(
         "Node", "-file", f"{data_folder}/Vel_4_2D.txt", "-node", 4, "-dof", 2, "vel"
     )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Disp_3_2D.txt", "-node", 3, "-dof", 2, "disp"
+    )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Disp_4_2D.txt", "-node", 4, "-dof", 2, "disp"
+    )
 
     omega1 = 2 * np.pi * 1.5  # 1.5 hz first mode
     omega2 = 2 * np.pi * 14
