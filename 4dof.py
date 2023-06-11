@@ -217,13 +217,13 @@ bcs = [
     ),
 ]
 
-# B.C.'s on the position
-bcs += [
-    dde.icbc.boundary_conditions.PointSetBC(
-        np.array([[0]]), np.array([[0]]), component=dim
-    )
-    for dim in range(N_DEGREES_OF_FREEDOM)
-]
+# # B.C.'s on the position
+# bcs += [
+#     dde.icbc.boundary_conditions.PointSetBC(
+#         np.array([[0]]), np.array([[0]]), component=dim
+#     )
+#     for dim in range(N_DEGREES_OF_FREEDOM)
+# ]
 
 pde_data = dde.data.PDE(
     geometry=geometry,
@@ -239,14 +239,16 @@ net = dde.nn.FNN(
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
-net.apply_output_transform(lambda x, y: y * 1e-4)
+net.apply_output_transform(
+    lambda x, y: y * 1e-4 * (x)
+)  # enforce starting at 0 as a hard b.c.
 
 model = dde.Model(pde_data, net)
 model.compile(
     "adam",
-    lr=1e-3,
+    lr=5e-5,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-11, 1e2, 1e2, 1e4, 1e2, 1, 1, 1, 1],
+    loss_weights=[1e-15, 1e15, 1e15, 1e15, 1e15],
 )
 
 variable = dde.callbacks.VariableValue(
