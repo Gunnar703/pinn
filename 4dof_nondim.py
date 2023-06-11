@@ -207,7 +207,7 @@ print("Setting up DeepXDE Model...", end=" ")
 geometry = dde.geometry.TimeDomain(0, data["t"][-1])
 
 ## Define ODE Parameters
-E_learned = dde.Variable(1.0)
+E_learned = dde.Variable(6.0)  # set E pretty close to what it should be
 
 ## Convert other necessary elements to tensors
 M = torch.Tensor(data["M"])
@@ -252,14 +252,21 @@ def differentiate_u(t, u, component):
     return dde.grad.jacobian(u, t, i=component)
 
 
-idx = np.unique(
-    np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
-)
-idx = [int(item) for item in idx]
+# idx = np.unique(
+#     np.floor(np.cos(np.linspace(0, np.pi / 2, len(data["t"]))) * len(data["t"])) - 1
+# )
+# idx = [int(item) for item in idx]
+# vel_train_data = {
+#     "t": data["t"][idx],
+#     "Disp_3_2D": data["Disp_3_2D"][idx],
+#     "Disp_4_2D": data["Disp_4_2D"][idx],
+# }
+
+# new_idx = vel_train_data["t"].argsort()
 vel_train_data = {
-    "t": data["t"][idx],
-    "Disp_3_2D": data["Disp_3_2D"][idx],
-    "Disp_4_2D": data["Disp_4_2D"][idx],
+    "t": data["t"],
+    "Disp_3_2D": data["Disp_3_2D"],
+    "Disp_4_2D": data["Disp_4_2D"],
 }
 
 # Position boundary conditions. Start at (0, 0) always.
@@ -287,7 +294,7 @@ pde_data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 30 * [32] + [4],
+    layer_sizes=[1] + 20 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
