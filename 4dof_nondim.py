@@ -262,7 +262,7 @@ vel_train_data = {
     "Disp_4_2D": data["Disp_4_2D"][idx],
 }
 
-# new_idx = vel_train_data["t"].argsort()
+new_idx = vel_train_data["t"].argsort()
 vel_train_data = {
     "t": data["t"],
     "Disp_3_2D": data["Disp_3_2D"],
@@ -305,11 +305,11 @@ model.compile(
     lr=1e-4,
     external_trainable_variables=E_learned,
     loss_weights=[
-        1,  # residual/pde loss
+        1e-4,  # residual/pde loss
         1,  # x-displacement of node 3 I.C.
         1,  # x-displacement of node 4 I.C.
-        1,  # y-displacement of node 3
-        1,  # y-displacement of node 4
+        1e2,  # y-displacement of node 3
+        1e1,  # y-displacement of node 4
     ],
 )
 
