@@ -235,7 +235,7 @@ pde_data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 10 * [50] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes=[1] + 5 * [50] + [N_DEGREES_OF_FREEDOM],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
