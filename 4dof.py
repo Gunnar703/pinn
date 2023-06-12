@@ -231,7 +231,7 @@ pde_data = dde.data.PDE(
     bcs=bcs,
     num_domain=1000,
     num_boundary=2,
-    num_test=100,
+    num_test=10,
 )
 
 net = dde.nn.FNN(
@@ -244,9 +244,9 @@ net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a h
 model = dde.Model(pde_data, net)
 model.compile(
     "adam",
-    lr=5e-5,
+    lr=5e-4,
     external_trainable_variables=[E_learned],
-    loss_weights=[0, 1, 1],
+    loss_weights=[0, 1e2, 1e2],
 )
 # model.compile(
 #     "adam",
