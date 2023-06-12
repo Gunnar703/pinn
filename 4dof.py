@@ -208,13 +208,13 @@ bcs = [
         (lambda t, u, X: differentiate_u(t, u, 3)),
     ),
     # Set initial x-velocity of node 3 to 0
-    # dde.icbc.boundary_conditions.PointSetOperatorBC(
-    #     np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 0))
-    # ),
-    # # Set initial x-velocity of node 4 to 0
-    # dde.icbc.boundary_conditions.PointSetOperatorBC(
-    #     np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 2))
-    # ),
+    dde.icbc.boundary_conditions.PointSetOperatorBC(
+        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 0))
+    ),
+    # Set initial x-velocity of node 4 to 0
+    dde.icbc.boundary_conditions.PointSetOperatorBC(
+        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 2))
+    ),
 ]
 
 # # B.C.'s on the position
@@ -242,18 +242,18 @@ net = dde.nn.FNN(
 net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
 model = dde.Model(pde_data, net)
-model.compile(
-    "adam",
-    lr=5e-4,
-    external_trainable_variables=[E_learned],
-    loss_weights=[0, 1e2, 1e2],
-)
 # model.compile(
 #     "adam",
 #     lr=5e-5,
 #     external_trainable_variables=[E_learned],
-#     loss_weights=[1e-15, 1e15, 1e15, 1e15, 1e15],
+#     loss_weights=[1e-15, 1e15, 1e15],
 # )
+model.compile(
+    "adam",
+    lr=5e-5,
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-15, 1e15, 1e15, 1e15, 1e15],
+)
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
