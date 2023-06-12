@@ -239,9 +239,7 @@ net = dde.nn.FNN(
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
-net.apply_output_transform(
-    lambda x, y: y * 1e-4 * (x)
-)  # enforce starting at 0 as a hard b.c.
+net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
 model = dde.Model(pde_data, net)
 model.compile(
