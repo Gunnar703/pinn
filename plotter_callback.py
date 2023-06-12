@@ -79,8 +79,8 @@ class PlotterCallback(dde.callbacks.Callback):
         plt.close()
 
         # This shouldn't stay here, but for now it's convenient
-        if self.epoch == 175_000:
-            self.model.loss_history.set_loss_weights([1, 1, 1, 1, 1])
+        if self.epoch == 200_000:
+            self.model.losshistory.set_loss_weights([1, 1, 1, 1, 1])
 
     def differentiate_model_output(self, x, y):
         ret = torch.zeros_like(y)
