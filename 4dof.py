@@ -252,7 +252,7 @@ model.compile(
     "adam",
     lr=5e-5,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-11, 1e3, 1e3, 1e5, 1e5],
+    loss_weights=[0, 1e3, 1e3, 1e5, 1e5],
 )
 
 variable = dde.callbacks.VariableValue(
