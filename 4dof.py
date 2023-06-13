@@ -229,7 +229,7 @@ pde_data = dde.data.PDE(
     geometry=geometry,
     pde=system,
     bcs=bcs,
-    num_domain=1000,
+    num_domain=500,
     num_boundary=2,
     num_test=10,
 )
@@ -252,7 +252,7 @@ model.compile(
     "adam",
     lr=5e-5,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-15, 1e15, 1e15, 1e15, 1e15],
+    loss_weights=[1e-11, 1e3, 1e3, 1e5, 1e5],
 )
 
 variable = dde.callbacks.VariableValue(
