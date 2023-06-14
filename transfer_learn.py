@@ -291,6 +291,6 @@ plotter_callback = PlotterCallback(
 )
 
 checkpointer = dde.callbacks.ModelCheckpoint(
-    "model_files/checkpoints/with_physics.pt", verbose=1, save_better_only=True
+    "model_files/checkpoints/with_physics", verbose=1, save_better_only=True
 )
 model.train(epochs=int(2e6), callbacks=[checkpointer, plotter_callback])
