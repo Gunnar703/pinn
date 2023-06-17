@@ -31,12 +31,21 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     ops.fix(1, 1, 1, 1)
     ops.fix(2, 1, 1, 1)
 
+    ## Velocity Recorders
     ops.recorder(
         "Node", "-file", f"{data_folder}/Vel_3_2D.txt", "-node", 3, "-dof", 2, "vel"
     )
     ops.recorder(
         "Node", "-file", f"{data_folder}/Vel_4_2D.txt", "-node", 4, "-dof", 2, "vel"
     )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Vel_3_1_2D.txt", "-node", 3, "-dof", 1, "vel"
+    )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Vel_4_1_2D.txt", "-node", 4, "-dof", 1, "vel"
+    )
+
+    ## Displacement Recorders
     ops.recorder(
         "Node", "-file", f"{data_folder}/Disp_3_2D.txt", "-node", 3, "-dof", 2, "disp"
     )

@@ -37,10 +37,30 @@ class PlotterCallback(dde.callbacks.Callback):
             )
 
             # Plot given data
-            if dim == 1:
+            if dim == 0:
+                ax.plot(
+                    self.data["t"],
+                    self.data["Vel_3_1_2D"],
+                    label="Data (OPS)",
+                    marker="x",
+                    markersize=1,
+                    linestyle="None",
+                    color="orange",
+                )
+            elif dim == 1:
                 ax.plot(
                     self.data["t"],
                     self.data["Vel_3_2D"],
+                    label="Data (OPS)",
+                    marker="x",
+                    markersize=1,
+                    linestyle="None",
+                    color="orange",
+                )
+            elif dim == 2:
+                ax.plot(
+                    self.data["t"],
+                    self.data["Vel_4_1_2D"],
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,
@@ -51,16 +71,6 @@ class PlotterCallback(dde.callbacks.Callback):
                 ax.plot(
                     self.data["t"],
                     self.data["Vel_4_2D"],
-                    label="Data (OPS)",
-                    marker="x",
-                    markersize=1,
-                    linestyle="None",
-                    color="orange",
-                )
-            else:
-                ax.plot(
-                    0,
-                    0,
                     label="Data (OPS)",
                     marker="x",
                     markersize=1,

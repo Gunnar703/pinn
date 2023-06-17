@@ -82,6 +82,8 @@ required_files = [
     "Damp_param",
     "K",
     "M",
+    "Vel_3_1_2D",
+    "Vel_4_1_2D",
     "Vel_3_2D",
     "Vel_4_2D",
     "t",
@@ -134,17 +136,37 @@ tsol = sol.t
 usol = sol.y[:4]
 usol_derivative = sol.y[4:]
 
-# gs = gridspec.GridSpec(4, 1, height_ratios=np.ones(4), hspace=0)
-# fig = plt.figure(figsize=(5, 10))
-# for dim in range(4):
-#     ax = fig.add_subplot(gs[dim])
-#     ax.plot(tsol, usol_derivative[dim], label="RK45")
+gs = gridspec.GridSpec(4, 1, height_ratios=np.ones(4), hspace=0)
+fig = plt.figure(figsize=(5, 10))
+for dim in range(4):
+    ax = fig.add_subplot(gs[dim])
+    ax.plot(tsol, usol_derivative[dim], label="RK45")
 
-#     if dim == 1:
-#         ax.plot(data["t"], data["Vel_3_2D"], label="OpenSees")
-#     elif dim == 3:
-#         ax.plot(data["t"], data["Vel_4_2D"], label="OpenSees")
-#     ax.legend()
+    if dim == 0:
+        ax.plot(
+            data["t"],
+            data["Vel_3_1_2D"],
+            label="OpenSees",
+            marker="x",
+            linestyle="None",
+        )
+    elif dim == 1:
+        ax.plot(
+            data["t"], data["Vel_3_2D"], label="OpenSees", marker="x", linestyle="None"
+        )
+    elif dim == 2:
+        ax.plot(
+            data["t"],
+            data["Vel_4_1_2D"],
+            label="OpenSees",
+            marker="x",
+            linestyle="None",
+        )
+    elif dim == 3:
+        ax.plot(
+            data["t"], data["Vel_4_2D"], label="OpenSees", marker="x", linestyle="None"
+        )
+    ax.legend()
 
 ## Set up DeepXDE model
 print("Setting up DeepXDE model...")
@@ -207,13 +229,17 @@ bcs = [
         data["Vel_4_2D"].reshape(-1, 1),
         (lambda t, u, X: differentiate_u(t, u, 3)),
     ),
-    # Set initial x-velocity of node 3 to 0
+    # Enforce x-velocity of node 3
     dde.icbc.boundary_conditions.PointSetOperatorBC(
-        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 0))
+        data["t"].reshape(-1, 1),
+        data["Vel_3_1_2D"].reshape(-1, 1),
+        (lambda t, u, X: differentiate_u(t, u, 0)),
     ),
-    # Set initial x-velocity of node 4 to 0
+    # Enforce x-velocity of node 4
     dde.icbc.boundary_conditions.PointSetOperatorBC(
-        np.array([[0]]), np.array([[0]]), (lambda t, u, X: differentiate_u(t, u, 2))
+        data["t"].reshape(-1, 1),
+        data["Vel_4_1_2D"].reshape(-1, 1),
+        (lambda t, u, X: differentiate_u(t, u, 2)),
     ),
 ]
 
@@ -252,7 +278,7 @@ model.compile(
     "adam",
     lr=5e-5,
     external_trainable_variables=[E_learned],
-    loss_weights=[0, 1e3, 1e3, 1e5, 1e5],
+    loss_weights=[1e-9, 1e3, 1e3, 1e5, 1e5],
 )
 
 variable = dde.callbacks.VariableValue(
