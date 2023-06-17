@@ -255,13 +255,13 @@ pde_data = dde.data.PDE(
     geometry=geometry,
     pde=system,
     bcs=bcs,
-    num_domain=500,
+    num_domain=5000,
     num_boundary=2,
     num_test=10,
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 5 * [50] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes=[1] + 20 * [32] + [N_DEGREES_OF_FREEDOM],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
@@ -278,7 +278,7 @@ model.compile(
     "adam",
     lr=5e-5,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-9, 1e3, 1e3, 1e5, 1e5],
+    loss_weights=[1e-12, 1e5, 1e5, 1e5, 1e5],
 )
 
 variable = dde.callbacks.VariableValue(
