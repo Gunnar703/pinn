@@ -281,7 +281,7 @@ plotter_callback = PlotterCallback(
 
 print("Done.")
 losshistory, train_state = model.train(
-    iterations=int(2e6), callbacks=[variable, plotter_callback]
+    iterations=int(3e5), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")
