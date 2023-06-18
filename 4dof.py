@@ -277,6 +277,7 @@ plotter_callback = PlotterCallback(
     data=data,
     tsol=tsol,
     usol=usol_derivative,
+    E_learned=E_learned,
 )
 
 print("Done.")

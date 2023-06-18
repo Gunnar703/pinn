@@ -4,29 +4,6 @@ import torch
 
 
 class PlotterCallback(dde.callbacks.Callback):
-    def __init__(self, period, filepath, data, tsol, usol):
-        super().__init__()
-        self.period = period
-        self.filepath = filepath
-        self.epoch = -1
-        self.data = data
-        self.tsol = tsol
-        self.usol = usol
-
-    def on_epoch_end(self):
-        self.epoch += 1  # increment epoch counter
-        if self.epoch % self.period != 0:
-            return
-        fig, axes = plt.subplots(4, 1, figsize=(8, 6))
-        fig.suptitle(f"Epoch: {self.epoch}" + "\n")
-
-
-import deepxde as dde
-from matplotlib import pyplot as plt
-import torch
-
-
-class PlotterCallback(dde.callbacks.Callback):
     def __init__(self, period, filepath, data, tsol, usol, E_learned):
         super().__init__()
         self.period = period
