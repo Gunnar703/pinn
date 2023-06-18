@@ -208,7 +208,7 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    return residual
+    return residual, torch.ones_like(residual) * torch.max(residual)
 
 
 def differentiate_u(t, u, component):
@@ -264,7 +264,7 @@ model.compile(
     "adam",
     lr=1e-3,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-12, 1e5, 1e5, 1e5, 1e5],
+    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
 )
 
 variable = dde.callbacks.VariableValue(
