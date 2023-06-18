@@ -42,8 +42,8 @@ class PlotterCallback(dde.callbacks.Callback):
             ax.plot(self.data["t"], v_pred[:, dim], label="Prediction", color="black")
             ax.plot(
                 self.data["t"],
-                residual[:, dim],
-                label="Residual",
+                residual[:, dim] * 1e-5,
+                label=r"Residual \times 10^{-5}",
                 color="purple",
                 linestyle="--",
             )
@@ -102,7 +102,7 @@ class PlotterCallback(dde.callbacks.Callback):
             if dim == 3:
                 ax.set_xlabel(r"Time ($t$)")
             if dim == 0:
-                ax.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.25))
+                ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.25))
         plt.savefig(
             f"{self.filepath}/epoch_{self.epoch}_prediction.png", bbox_inches="tight"
         )
