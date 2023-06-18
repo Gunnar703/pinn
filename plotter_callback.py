@@ -140,7 +140,7 @@ class PlotterCallback(dde.callbacks.Callback):
         F = torch.Tensor(F)
 
         residual = (
-            torch.mm(self.data["M"], y_tt.permute((1, 0)))
+            torch.mm(torch.Tensor(self.data["M"]), y_tt.permute((1, 0)))
             + torch.mm(torch.abs(C), y_t.permute((1, 0)))
             + torch.mm(torch.abs(K), y.permute((1, 0)))
             - F.permute((1, 0))
