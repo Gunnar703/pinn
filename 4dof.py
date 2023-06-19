@@ -210,7 +210,7 @@ def system(t, u):
 
     ddt_residual = torch.zeros_like(residual)
     for dim in range(N_DEGREES_OF_FREEDOM):
-        ddt_residual[:, dim] = dde.grad.jacobian(residual**2, t, i=dim)
+        ddt_residual[:, dim] = dde.grad.jacobian(residual**2, t, i=dim).squeeze()
 
     return residual, torch.ones_like(ddt_residual) * torch.max(ddt_residual)
 
