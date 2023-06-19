@@ -263,21 +263,12 @@ net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a h
 
 model = dde.Model(pde_data, net)
 
-train_further = os.path.exists("model_files/train_further.pt")
-
-if train_further:
-    model.compile(
-        "L-BFGS",
-        external_trainable_variables=[E_learned],
-        loss_weights=[n * 1e-6 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
-    )
-else:
-    model.compile(
-        "adam",
-        lr=1e-3,
-        external_trainable_variables=[E_learned],
-        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
-    )
+model.compile(
+    "adam",
+    lr=1e-3,
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+)
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -294,12 +285,9 @@ plotter_callback = PlotterCallback(
 
 print("Done.")
 
-if train_further:
-    losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
-else:
-    losshistory, train_state = model.train(
-        iterations=int(3e5), callbacks=[variable, plotter_callback]
-    )
+losshistory, train_state = model.train(
+    iterations=int(3e5), callbacks=[variable, plotter_callback]
+)
 
 print("Saving model...")
 model.save("model_files/model")
@@ -313,15 +301,14 @@ print("E = ", E_learned.detach())
 print("True E vector\n", "----------")
 print("E = ", data["Y"])
 
-# ## Train with L-BFGS
-# print("Training with L-BFGS")
-# torch.backends.cuda.matmul.allow_tf32 = False
-# model.compile(
-#     optimizer="L-BFGS",
-#     external_trainable_variables=[E_learned],
-#     loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
-# )
-# losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
-# model.save("model_files/model")
-# dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
-# print("Done.")
+## Train with L-BFGS
+print("Training with L-BFGS")
+model.compile(
+    optimizer="L-BFGS",
+    external_trainable_variables=[E_learned],
+    loss_weights=[n * 1e-5 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
+)
+losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
+model.save("model_files/model")
+dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
+print("Done.")
