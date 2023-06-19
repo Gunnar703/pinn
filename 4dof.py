@@ -269,7 +269,7 @@ if train_further:
     model.compile(
         "L-BFGS",
         external_trainable_variables=[E_learned],
-        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+        loss_weights=[n * 1e-6 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
     )
 else:
     model.compile(
