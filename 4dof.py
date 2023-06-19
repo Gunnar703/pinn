@@ -260,8 +260,7 @@ net = dde.nn.FNN(
 net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
 ## Check if model file exists already
-if os.path.exists("model_files/train_more.pt"):
-    exists = True
+exists = os.path.exists("model_files/train_further.pt")
 
 model = dde.Model(pde_data, net)
 if not exists:
