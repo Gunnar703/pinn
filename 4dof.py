@@ -271,7 +271,7 @@ model.compile(
 )
 
 if os.path.exists("model_files/train_further.pt"):
-    model.load("model_files/train_further.pt")
+    model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
