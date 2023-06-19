@@ -272,7 +272,7 @@ if not exists:
     )
 else:
     model.compile(
-        "lbfgs",
+        "L-BFGS",
         lr=1e-3,
         external_trainable_variables=[E_learned],
         loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
