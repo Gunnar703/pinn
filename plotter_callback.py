@@ -42,8 +42,8 @@ class PlotterCallback(dde.callbacks.Callback):
             ax.plot(self.data["t"], v_pred[:, dim], label="Prediction", color="black")
             ax.plot(
                 self.data["t"],
-                residual[:, dim] * 1e-5,
-                label=r"Residual \times 10^{-5}",
+                residual[:, dim] * 1e-6,
+                label=r"Residual $\times 10^{-6}$",
                 color="purple",
                 linestyle="--",
             )

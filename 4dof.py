@@ -259,13 +259,25 @@ net = dde.nn.FNN(
 )
 net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
+## Check if model file exists already
+if os.path.exists("model_files/train_more.pt"):
+    exists = True
+
 model = dde.Model(pde_data, net)
-model.compile(
-    "adam",
-    lr=1e-3,
-    external_trainable_variables=[E_learned],
-    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
-)
+if not exists:
+    model.compile(
+        "adam",
+        lr=1e-3,
+        external_trainable_variables=[E_learned],
+        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+    )
+else:
+    model.compile(
+        "lbfgs",
+        lr=1e-3,
+        external_trainable_variables=[E_learned],
+        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+    )
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -281,9 +293,14 @@ plotter_callback = PlotterCallback(
 )
 
 print("Done.")
-losshistory, train_state = model.train(
-    iterations=int(3e5), callbacks=[variable, plotter_callback]
-)
+
+if not exists:
+    losshistory, train_state = model.train(
+        iterations=int(3e5), callbacks=[variable, plotter_callback]
+    )
+else:
+    losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
+
 
 print("Saving model...")
 model.save("model_files/model")
@@ -292,7 +309,7 @@ print("Done.")
 
 #### Print final E vector #####
 print("Final learned E vector\n", "----------")
-print("E = \n", E_learned.detach())
+print("E = ", E_learned.detach())
 
 print("True E vector\n", "----------")
-print("EK = \n", data["Y"])
+print("E = ", data["Y"])
