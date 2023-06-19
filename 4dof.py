@@ -208,7 +208,11 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    return residual, torch.ones_like(residual) * torch.max(residual)
+    ddt_residual = torch.zeros_like(residual)
+    for dim in range(N_DEGREES_OF_FREEDOM):
+        ddt_residual[:, dim] = dde.grad.jacobian(residual**2, t, i=dim)
+
+    return residual, torch.ones_like(ddt_residual) * torch.max(ddt_residual)
 
 
 def differentiate_u(t, u, component):
@@ -259,24 +263,13 @@ net = dde.nn.FNN(
 )
 net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
-## Check if model file exists already
-exists = os.path.exists("model_files/train_further.pt")
-
 model = dde.Model(pde_data, net)
-if not exists:
-    model.compile(
-        "adam",
-        lr=1e-3,
-        external_trainable_variables=[E_learned],
-        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
-    )
-else:
-    model.compile(
-        "L-BFGS",
-        lr=1e-3,
-        external_trainable_variables=[E_learned],
-        loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
-    )
+model.compile(
+    "adam",
+    lr=1e-3,
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+)
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -293,13 +286,9 @@ plotter_callback = PlotterCallback(
 
 print("Done.")
 
-if not exists:
-    losshistory, train_state = model.train(
-        iterations=int(3e5), callbacks=[variable, plotter_callback]
-    )
-else:
-    losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
-
+losshistory, train_state = model.train(
+    iterations=int(3e5), callbacks=[variable, plotter_callback]
+)
 
 print("Saving model...")
 model.save("model_files/model")
@@ -312,3 +301,16 @@ print("E = ", E_learned.detach())
 
 print("True E vector\n", "----------")
 print("E = ", data["Y"])
+
+## Train with L-BFGS
+print("Training with L-BFGS")
+torch.backends.cuda.matmul.allow_tf32 = False
+model.compile(
+    optimizer="L-BFGS",
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
+)
+losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
+model.save("model_files/model")
+dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
+print("Done.")
