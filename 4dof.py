@@ -14,6 +14,8 @@ import argparse
 
 from plotter_callback import PlotterCallback
 
+torch.backends.cuda.matmul.allow_tf32 = False
+
 print("Done.")
 
 # Create the argument parser
@@ -208,7 +210,7 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    return residual
+    return residual, torch.ones_like(residual) * torch.max(residual)
 
 
 def differentiate_u(t, u, component):
@@ -243,14 +245,6 @@ bcs = [
     ),
 ]
 
-# # B.C.'s on the position
-# bcs += [
-#     dde.icbc.boundary_conditions.PointSetBC(
-#         np.array([[0]]), np.array([[0]]), component=dim
-#     )
-#     for dim in range(N_DEGREES_OF_FREEDOM)
-# ]
-
 pde_data = dde.data.PDE(
     geometry=geometry,
     pde=system,
@@ -268,18 +262,16 @@ net = dde.nn.FNN(
 net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a hard b.c.
 
 model = dde.Model(pde_data, net)
-# model.compile(
-#     "adam",
-#     lr=5e-5,
-#     external_trainable_variables=[E_learned],
-#     loss_weights=[1e-15, 1e15, 1e15],
-# )
+
 model.compile(
     "adam",
-    lr=5e-5,
+    lr=1e-3,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-12, 1e5, 1e5, 1e5, 1e5],
+    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
 )
+
+if os.path.exists("model_files/train_further.pt"):
+    model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -291,11 +283,13 @@ plotter_callback = PlotterCallback(
     data=data,
     tsol=tsol,
     usol=usol_derivative,
+    E_learned=E_learned,
 )
 
 print("Done.")
+
 losshistory, train_state = model.train(
-    iterations=int(2e6), callbacks=[variable, plotter_callback]
+    iterations=int(3e5), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")
@@ -305,7 +299,19 @@ print("Done.")
 
 #### Print final E vector #####
 print("Final learned E vector\n", "----------")
-print("E = \n", E_learned.detach())
+print("E = ", E_learned.detach())
 
 print("True E vector\n", "----------")
-print("EK = \n", data["Y"])
+print("E = ", data["Y"])
+
+## Train with L-BFGS
+print("Training with L-BFGS")
+model.compile(
+    optimizer="L-BFGS",
+    external_trainable_variables=[E_learned],
+    loss_weights=[n * 1e-5 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
+)
+losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
+model.save("model_files/model")
+dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
+print("Done.")
