@@ -270,6 +270,9 @@ model.compile(
     loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
 )
 
+if os.path.exists("model_files/train_further.pt"):
+    model.load("model_files/train_further.pt")
+
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
 )
