@@ -245,7 +245,7 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    return residual  # torch.ones_like(residual) * torch.max(residual)
+    return residual, torch.ones_like(residual) * torch.max(torch.abs(residual))
 
 
 def differentiate_u(t, u, component):
@@ -331,7 +331,7 @@ print("Training with L-BFGS")
 model.compile(
     optimizer="L-BFGS",
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-10, 1, 1],
+    loss_weights=[1e-10, 1e-10, 1, 1],
 )
 losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
 model.save("model_files/model")
