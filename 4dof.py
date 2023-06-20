@@ -292,8 +292,8 @@ model.compile(
     external_trainable_variables=[E_learned],
 )
 
-# if os.path.exists("model_files/train_further.pt"):
-#     model.restore("model_files/train_further.pt")
+if os.path.exists("model_files/train_further.pt"):
+    model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -311,7 +311,7 @@ plotter_callback = PlotterCallback(
 print("Done.")
 
 losshistory, train_state = model.train(
-    iterations=int(1e6), callbacks=[variable, plotter_callback]
+    iterations=int(2e6), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")
