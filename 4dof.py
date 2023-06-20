@@ -292,8 +292,8 @@ model.compile(
     external_trainable_variables=[E_learned],
 )
 
-if os.path.exists("model_files/train_further.pt"):
-    model.restore("model_files/train_further.pt")
+# if os.path.exists("model_files/train_further.pt"):
+#     model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
