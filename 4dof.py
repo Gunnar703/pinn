@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import deepxde as dde
+from scipy import integrate
 import torch
 import torch.nn as nn
 from scipy.integrate import solve_ivp
@@ -138,50 +139,47 @@ tsol = sol.t
 usol = sol.y[:4]
 usol_derivative = sol.y[4:]
 
-gs = gridspec.GridSpec(4, 1, height_ratios=np.ones(4), hspace=0)
-fig = plt.figure(figsize=(5, 10))
-for dim in range(4):
-    ax = fig.add_subplot(gs[dim])
-    ax.plot(tsol, usol_derivative[dim], label="RK45")
-
-    if dim == 0:
-        ax.plot(
-            data["t"],
-            data["Vel_3_1_2D"],
-            label="OpenSees",
-            marker="x",
-            linestyle="None",
-        )
-    elif dim == 1:
-        ax.plot(
-            data["t"], data["Vel_3_2D"], label="OpenSees", marker="x", linestyle="None"
-        )
-    elif dim == 2:
-        ax.plot(
-            data["t"],
-            data["Vel_4_1_2D"],
-            label="OpenSees",
-            marker="x",
-            linestyle="None",
-        )
-    elif dim == 3:
-        ax.plot(
-            data["t"], data["Vel_4_2D"], label="OpenSees", marker="x", linestyle="None"
-        )
-    ax.legend()
-
 ## Set up DeepXDE model
 print("Setting up DeepXDE model...")
 # Define domain
 geometry = dde.geometry.TimeDomain(0, data["t"][-1])
 
 # Define parameters
-E_learned = dde.Variable(1.0)
+E_learned = dde.Variable(6.0)
 # alpha_pi = dde.Variable(1.0)
 
 # Define other tensors
 M = torch.Tensor(data["M"])
 K_basis = torch.Tensor(data["k_basis"])
+
+## Numerically integrate/differentiate
+du_t_1 = data["Vel_3_2D"]
+du_t_3 = data["Vel_4_2D"]
+
+u_1 = integrate.cumulative_trapezoid(du_t_1, data["t"], initial=0)
+u_3 = integrate.cumulative_trapezoid(du_t_3, data["t"], initial=0)
+
+du_tt_1, du_tt_3 = [np.zeros_like(du_t_1)] * 2
+du_tt_1[1:] = (du_t_1[1:] - du_t_1[:-1]) / (data["t"][1:] - data["t"][:-1])
+du_tt_3[1:] = (du_t_3[1:] - du_t_3[:-1]) / (data["t"][1:] - data["t"][:-1])
+
+du_t_1 = torch.Tensor(du_t_1).to(device)
+du_t_3 = torch.Tensor(du_t_3).to(device)
+u_1 = torch.Tensor(u_1).to(device)
+u_3 = torch.Tensor(u_3).to(device)
+du_tt_1 = torch.Tensor(du_tt_1).to(device)
+du_tt_3 = torch.Tensor(du_tt_3).to(device)
+
+t_tens = torch.Tensor(data["t"])
+
+
+def interp1d(lookup_x, lookup_y, lookup_val):
+    np_x = lookup_x.detach().cpu().numpy()
+    np_y = lookup_y.detach().cpu().numpy()
+    np_val = lookup_val.detach().cpu().numpy()
+
+    interp_val = np.interp(np_val, np_x, np_y)
+    return torch.Tensor(interp_val)
 
 
 # Define the ODE residual
@@ -190,15 +188,52 @@ def system(t, u):
     y_t = torch.zeros_like(y).to(device)
     y_tt = torch.zeros_like(y).to(device)
 
-    for dim in range(N_DEGREES_OF_FREEDOM):
+    for dim in (0, 1):
         y_t[:, dim] = dde.grad.jacobian(u, t, i=dim, j=0).squeeze()
         y_tt[:, dim] = dde.grad.hessian(u, t, component=dim).squeeze()
+
+    dy_t_1 = interp1d(t_tens, du_t_1, t.squeeze()).to(device)
+    dy_t_3 = interp1d(t_tens, du_t_3, t.squeeze()).to(device)
+    y_1 = interp1d(t_tens, u_1, t.squeeze()).to(device)
+    y_3 = interp1d(t_tens, u_3, t.squeeze()).to(device)
+    dy_tt_1 = interp1d(t_tens, du_tt_1, t.squeeze()).to(device)
+    dy_tt_3 = interp1d(t_tens, du_tt_3, t.squeeze()).to(device)
+
+    y = torch.concatenate(
+        (
+            y[:, 0].reshape(-1, 1),
+            y_1.reshape(-1, 1),
+            y[:, 1].reshape(-1, 1),
+            y_3.reshape(-1, 1),
+        ),
+        1,
+    )
+
+    y_t = torch.concatenate(
+        (
+            y_t[:, 0].reshape(-1, 1),
+            dy_t_1.reshape(-1, 1),
+            y_t[:, 1].reshape(-1, 1),
+            dy_t_3.reshape(-1, 1),
+        ),
+        1,
+    )
+
+    y_tt = torch.concatenate(
+        (
+            y_tt[:, 0].reshape(-1, 1),
+            dy_tt_1.reshape(-1, 1),
+            y_tt[:, 1].reshape(-1, 1),
+            dy_tt_3.reshape(-1, 1),
+        ),
+        1,
+    )
 
     E = torch.abs(E_learned) * 1e7
     K = K_basis * E
     C = data["Damp_param"][0] * M + data["Damp_param"][1] * K
 
-    F = np.zeros((t.shape[0], u.shape[1]))
+    F = np.zeros((t.shape[0], 4))
     f_quasiscalar = force_magnitude(t.detach().cpu()).squeeze()
     F[:, force_idx] = -f_quasiscalar
     F = torch.Tensor(F)
@@ -221,27 +256,15 @@ def differentiate_u(t, u, component):
 bcs = [
     # Enforce y-velocity of node 3
     dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_3_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 1)),
+        np.array([[0]]),
+        np.array([[0]]),
+        (lambda t, u, X: differentiate_u(t, u, 0)),
     ),
     # Enforce y-velocity of node 4
     dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_4_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 3)),
-    ),
-    # Enforce x-velocity of node 3
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_3_1_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 0)),
-    ),
-    # Enforce x-velocity of node 4
-    dde.icbc.boundary_conditions.PointSetOperatorBC(
-        data["t"].reshape(-1, 1),
-        data["Vel_4_1_2D"].reshape(-1, 1),
-        (lambda t, u, X: differentiate_u(t, u, 2)),
+        np.array([[0]]),
+        np.array([[0]]),
+        (lambda t, u, X: differentiate_u(t, u, 1)),
     ),
 ]
 
@@ -255,7 +278,7 @@ pde_data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 20 * [32] + [N_DEGREES_OF_FREEDOM],
+    layer_sizes=[1] + 20 * [32] + [2],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
@@ -267,11 +290,10 @@ model.compile(
     "adam",
     lr=1e-3,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
 )
 
-if os.path.exists("model_files/train_further.pt"):
-    model.restore("model_files/train_further.pt")
+# if os.path.exists("model_files/train_further.pt"):
+#     model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
