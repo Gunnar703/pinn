@@ -326,14 +326,14 @@ print("E = ", E_learned.detach())
 print("True E vector\n", "----------")
 print("E = ", data["Y"])
 
-## Train with L-BFGS
-print("Training with L-BFGS")
-model.compile(
-    optimizer="L-BFGS",
-    external_trainable_variables=[E_learned],
-    loss_weights=[1e-10, 1e-10, 1, 1],
-)
-losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
-model.save("model_files/model")
-dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
-print("Done.")
+# ## Train with L-BFGS
+# print("Training with L-BFGS")
+# model.compile(
+#     optimizer="L-BFGS",
+#     external_trainable_variables=[E_learned],
+#     loss_weights=[1e-10, 1e-10, 1, 1],
+# )
+# losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
+# model.save("model_files/model")
+# dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
+# print("Done.")

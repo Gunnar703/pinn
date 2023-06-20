@@ -98,8 +98,10 @@ class PlotterCallback(dde.callbacks.Callback):
                 )
             elif dim == 1:
                 ax.plot(self.t, self.du_t_1_np, label="Hard BC", color="gray")
+                ax.plot(self.t, self.data["Vel_3_1_2D"], label="Solution", color="gray")
             elif dim == 2:
                 ax.plot(self.t, v_pred[:, 1], label="Prediction", color="black")
+                ax.plot(self.t, self.data["Vel_4_1_2D"], label="Solution", color="gray")
                 ax.plot(
                     self.data["t"],
                     residual[:, 1] * 1e-6,
