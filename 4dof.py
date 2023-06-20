@@ -245,7 +245,7 @@ def system(t, u):
         - F.permute((1, 0))
     ).permute((1, 0))
 
-    return residual, torch.ones_like(residual) * torch.max(residual)
+    return residual  # torch.ones_like(residual) * torch.max(residual)
 
 
 def differentiate_u(t, u, component):
@@ -288,7 +288,7 @@ model = dde.Model(pde_data, net)
 
 model.compile(
     "adam",
-    lr=1e-3,
+    lr=5e-4,
     external_trainable_variables=[E_learned],
 )
 
@@ -311,7 +311,7 @@ plotter_callback = PlotterCallback(
 print("Done.")
 
 losshistory, train_state = model.train(
-    iterations=int(3e5), callbacks=[variable, plotter_callback]
+    iterations=int(1e6), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")
@@ -331,7 +331,7 @@ print("Training with L-BFGS")
 model.compile(
     optimizer="L-BFGS",
     external_trainable_variables=[E_learned],
-    loss_weights=[n * 1e-5 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
+    loss_weights=[1e-10, 1, 1],
 )
 losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
 model.save("model_files/model")
