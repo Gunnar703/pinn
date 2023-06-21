@@ -307,12 +307,9 @@ print("Done.")
 
 model.compile(
     "adam",
-    lr=1e-2,
+    lr=1e-3,
     external_trainable_variables=[E_learned],
     loss_weights=[1e-9, 1e-10, 1, 1],
-)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    model.opt, patience=3000, factor=0.1
 )
 losshistory, train_state = model.train(
     iterations=int(1e6), callbacks=[variable, plotter_callback]
