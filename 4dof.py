@@ -278,7 +278,7 @@ pde_data = dde.data.PDE(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 20 * [32] + [2],
+    layer_sizes=[1] + 4 * [256] + [2],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
@@ -286,11 +286,6 @@ net.apply_output_transform(lambda x, y: y * (x))  # enforce starting at 0 as a h
 
 model = dde.Model(pde_data, net)
 
-model.compile(
-    "adam",
-    lr=5e-4,
-    external_trainable_variables=[E_learned],
-)
 
 # if os.path.exists("model_files/train_further.pt"):
 #     model.restore("model_files/train_further.pt")
@@ -310,8 +305,17 @@ plotter_callback = PlotterCallback(
 
 print("Done.")
 
+model.compile(
+    "adam",
+    lr=1e-2,
+    external_trainable_variables=[E_learned],
+    loss_weights=[1e-9, 1e-10, 1, 1],
+)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    model.opt, patience=3000, factor=0.1
+)
 losshistory, train_state = model.train(
-    iterations=int(2e6), callbacks=[variable, plotter_callback]
+    iterations=int(1e6), callbacks=[variable, plotter_callback]
 )
 
 print("Saving model...")
