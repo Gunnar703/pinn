@@ -309,7 +309,6 @@ model.compile(
     "adam",
     lr=1e-3,
     external_trainable_variables=[E_learned],
-    loss_weights=[1e-9, 1e-10, 1, 1],
 )
 losshistory, train_state = model.train(
     iterations=int(1e6), callbacks=[variable, plotter_callback]
