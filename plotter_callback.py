@@ -122,6 +122,6 @@ class PlotterCallback(dde.callbacks.Callback):
 
     def differentiate_model_output(self, x, y):
         ret = torch.zeros_like(y)
-        for i in range(2):
+        for i in range(y.shape[1]):
             ret[:, i] = dde.grad.jacobian(y, x, i=i, j=0).squeeze()
         return ret
