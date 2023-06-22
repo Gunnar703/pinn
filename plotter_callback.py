@@ -102,10 +102,10 @@ class PlotterCallback(dde.callbacks.Callback):
                 ax.plot(self.t, self.data["Vel_4_1_2D"], label="Solution", color="gray")
             elif dim == 3:
                 ax.plot(self.t, v_pred[:, 3], "--", label="Prediction", color="purple")
-                ax.plot(self.t, self.data["Vel_3_2D"], label="Solution", color="gray")
+                ax.plot(self.t, self.data["Vel_4_2D"], label="Solution", color="gray")
                 ax.plot(
                     self.t,
-                    self.data["Vel_3_2D"],
+                    self.data["Vel_4_2D"],
                     linestyle="None",
                     marker=".",
                     markersize=1,

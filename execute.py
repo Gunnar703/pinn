@@ -15,19 +15,19 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# # Create the argument parser
-# parser = argparse.ArgumentParser()
+# Create the argument parser
+parser = argparse.ArgumentParser()
 
-# # Add the command line argument
-# parser.add_argument(
-#     "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
-# )
+# Add the command line argument
+parser.add_argument(
+    "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
+)
 
-# # Parse the arguments
-# args = parser.parse_args()
+# Parse the arguments
+args = parser.parse_args()
 
-# # Access the value of the command line argument
-# checkpoint_interval = args.checkpoint_interval
+# Access the value of the command line argument
+checkpoint_interval = args.checkpoint_interval
 
 # %% [markdown]
 # ## Import Data
