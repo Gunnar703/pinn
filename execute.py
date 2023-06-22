@@ -15,19 +15,19 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# Create the argument parser
-parser = argparse.ArgumentParser()
+# # Create the argument parser
+# parser = argparse.ArgumentParser()
 
-# Add the command line argument
-parser.add_argument(
-    "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
-)
+# # Add the command line argument
+# parser.add_argument(
+#     "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
+# )
 
-# Parse the arguments
-args = parser.parse_args()
+# # Parse the arguments
+# args = parser.parse_args()
 
-# Access the value of the command line argument
-checkpoint_interval = args.checkpoint_interval
+# # Access the value of the command line argument
+# checkpoint_interval = args.checkpoint_interval
 
 # %% [markdown]
 # ## Import Data
@@ -93,34 +93,6 @@ def load(t: torch.Tensor):
     return ret * 1e3  # convert kN -> N
 
 
-# Define interpolation of u, u_t, u_tt
-def known_u_derivs(t: torch.Tensor):
-    x = t
-    xp = data["t"]
-    fp1 = data["Disp_3_2D"]
-    fp2 = data["Disp_4_2D"]
-    fp3 = data["Vel_3_2D"]
-    fp4 = data["Vel_4_2D"]
-    fp5 = data["Acc_3_2D"]
-    fp6 = data["Acc_4_2D"]
-    if isinstance(t, torch.Tensor):
-        x = x.detach().cpu().numpy().squeeze()
-        f1 = torch.Tensor(np.interp(x, xp, fp1))
-        f2 = torch.Tensor(np.interp(x, xp, fp2))
-        f3 = torch.Tensor(np.interp(x, xp, fp3))
-        f4 = torch.Tensor(np.interp(x, xp, fp4))
-        f5 = torch.Tensor(np.interp(x, xp, fp5))
-        f6 = torch.Tensor(np.interp(x, xp, fp6))
-    else:
-        f1 = np.interp(x, xp, fp1).squeeze()
-        f2 = np.interp(x, xp, fp2).squeeze()
-        f3 = np.interp(x, xp, fp3).squeeze()
-        f4 = np.interp(x, xp, fp4).squeeze()
-        f5 = np.interp(x, xp, fp5).squeeze()
-        f6 = np.interp(x, xp, fp6).squeeze()
-    return f1, f2, f3, f4, f5, f6
-
-
 # %% [markdown]
 # ## Define the PDE
 
@@ -142,40 +114,16 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 E = dde.Variable(0.6)
 
 
-# Helper function
-def get_variables(t, u):
-    y, y_t, y_tt = [torch.zeros(4, t.shape[0])] * 3
-    u_t, u_tt = get_u_derivatives(t, u)
-
-    u3y, u4y, u3y_t, u4y_t, u3y_tt, u4y_tt = known_u_derivs(t)
-
-    # Displacement
-    y[0, :] = u[:, 0]
-    y[1, :] = u3y
-    y[2, :] = u[:, 1]
-    y[1, :] = u4y
-
-    # Velocity
-    y_t[0, :] = u_t[:, 0]
-    y_t[1, :] = u3y_t
-    y_t[2, :] = u_t[:, 1]
-    y_t[1, :] = u4y_t
-
-    # Acceleration
-    y_tt[0, :] = u_tt[:, 0]
-    y_tt[1, :] = u3y_tt
-    y_tt[2, :] = u_tt[:, 1]
-    y_tt[1, :] = u4y_tt
-    return y, y_t, y_tt
-
-
 # ODE definition
 def ode_sys(t, u):
     F = load(t)
-    K = Kb * E
+    K = Kb * torch.abs(E)
     C = a0 * M + a1 * K
 
-    y, y_t, y_tt = get_variables(t, u)
+    y_t, y_tt = get_u_derivatives(t, u)
+    y = u.permute((1, 0))
+    y_t = y_t.permute((1, 0))
+    y_tt = y_tt.permute((1, 0))
 
     # Whatever E is learned to be, it is actually 1e8 times that value
     residual = (
@@ -202,12 +150,24 @@ v0 = [
     )
     for i in (0, 1)
 ]
+vi = [
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Vel_3_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 1, 1),
+    ),
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Vel_4_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 3, 1),
+    ),
+]
 
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    v0,
-    num_domain=400,
+    v0 + vi,
+    num_domain=1000,
     num_boundary=2,
 )
 
@@ -231,7 +191,7 @@ plotter_callback = PlotterCallback(
 )
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 8 * [100] + [2],
+    layer_sizes=[1] + 8 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
