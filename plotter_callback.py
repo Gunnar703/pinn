@@ -160,7 +160,7 @@ class PlotterCallback(dde.callbacks.Callback):
             u_tt[:, dim] = dde.grad.hessian(u, t, component=dim).squeeze()
         return u_t, u_tt
 
-    def load(self, t: torch.Tensor | float):
+    def load(self, t: torch.Tensor):
         x = t
         xp = self.data["t"]
         fp = self.data["load"]
@@ -178,7 +178,7 @@ class PlotterCallback(dde.callbacks.Callback):
             ret = ret.T
         return ret * 1e3  # convert kN -> N
 
-    def known_u_derivs(self, t: torch.Tensor | float):
+    def known_u_derivs(self, t: torch.Tensor):
         x = t
         xp = self.data["t"]
         fp1 = self.data["Disp_3_2D"]
