@@ -74,7 +74,7 @@ Kb = torch.Tensor(data["k_basis"]).to("cuda")
 
 
 # Define interpolation of F. Returns M x N_DIM tensor.
-def load(t: torch.Tensor | float):
+def load(t: torch.Tensor):
     x = t
     xp = data["t"]
     fp = data["load"]
@@ -94,7 +94,7 @@ def load(t: torch.Tensor | float):
 
 
 # Define interpolation of u, u_t, u_tt
-def known_u_derivs(t: torch.Tensor | float):
+def known_u_derivs(t: torch.Tensor):
     x = t
     xp = data["t"]
     fp1 = data["Disp_3_2D"]
