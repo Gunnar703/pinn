@@ -72,7 +72,7 @@ class PlotterCallback(dde.callbacks.Callback):
         fig.suptitle(
             f"Epoch: {self.epoch}"
             + "\n"
-            + "E = %.3f" % float(self.E.detach().cpu().item())
+            + "E = %.3f" % np.tanh(float(self.E.detach().cpu().item()))
             + "\n"
         )
 
