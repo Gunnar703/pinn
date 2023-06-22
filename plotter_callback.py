@@ -81,12 +81,11 @@ class PlotterCallback(dde.callbacks.Callback):
         )
         for dim in range(4):
             ax = axes[dim]
+            ax.plot(self.t, v_pred[:, dim], "--", label="Prediction", color="purple")
 
             if dim == 0:
-                ax.plot(self.t, v_pred[:, 0], "--", label="Prediction", color="purple")
                 ax.plot(self.t, self.data["Vel_3_1_2D"], label="Solution", color="gray")
             elif dim == 1:
-                ax.plot(self.t, v_pred[:, 1], "--", label="Prediction", color="purple")
                 ax.plot(self.t, self.data["Vel_3_2D"], label="Solution", color="gray")
                 ax.plot(
                     self.t,
@@ -98,10 +97,8 @@ class PlotterCallback(dde.callbacks.Callback):
                     color="orange",
                 )
             elif dim == 2:
-                ax.plot(self.t, v_pred[:, 2], "--", label="Prediction", color="purple")
                 ax.plot(self.t, self.data["Vel_4_1_2D"], label="Solution", color="gray")
             elif dim == 3:
-                ax.plot(self.t, v_pred[:, 3], "--", label="Prediction", color="purple")
                 ax.plot(self.t, self.data["Vel_4_2D"], label="Solution", color="gray")
                 ax.plot(
                     self.t,
