@@ -91,8 +91,8 @@ class PlotterCallback(dde.callbacks.Callback):
                     self.t,
                     self.data["Vel_3_2D"],
                     linestyle="None",
-                    marker=".",
-                    markersize=1,
+                    marker="+",
+                    markersize=2,
                     label="Data",
                     color="orange",
                 )
@@ -104,8 +104,8 @@ class PlotterCallback(dde.callbacks.Callback):
                     self.t,
                     self.data["Vel_4_2D"],
                     linestyle="None",
-                    marker=".",
-                    markersize=1,
+                    marker="+",
+                    markersize=2,
                     label="Data",
                     color="orange",
                 )

@@ -126,9 +126,15 @@ def ode_sys(t, u):
     y_tt = y_tt.permute((1, 0))
 
     # Whatever E is learned to be, it is actually 1e8 times that value
-    residual = (
-        U_MAX / T_MAX**2 * M @ y_tt - U_MAX / T_MAX * C @ y_t - F
-    ) / 1e8 - U_MAX * K @ y
+    U = y * U_MAX
+    DU_DT = y_t * U_MAX / T_MAX
+    D2U_DT2 = y_tt * U_MAX / T_MAX**2
+
+    mass_term = M @ D2U_DT2 / 1e8
+    damp_term = (a1 * Kb * E) @ DU_DT + (a0 * M) / 1e8 @ DU_DT
+    stiff_term = (Kb * E) @ U
+    force_term = F / 1e8
+    residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
     return residual
 
@@ -150,6 +156,8 @@ v0 = [
     )
     for i in (0, 1)
 ]
+
+# Known dimensions
 vi = [
     dde.icbc.PointSetOperatorBC(
         t_data,
@@ -163,10 +171,30 @@ vi = [
     ),
 ]
 
+# Position BC
+xi = [
+    dde.icbc.PointSetBC(t_data, data["Disp_3_2D"].reshape(-1, 1), component=1),
+    dde.icbc.PointSetBC(t_data, data["Disp_4_2D"].reshape(-1, 1), component=3),
+]
+
+# Acceleration BC
+ai = [
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Acc_3_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 1, 2),
+    ),
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Acc_4_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 3, 2),
+    ),
+]
+
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    v0 + vi,
+    vi + xi + ai,
     num_domain=1000,
     num_boundary=2,
 )
@@ -231,7 +259,7 @@ for path in ["/".join(entry) for entry in necessary_directories]:
 
 # %%
 losshistory, train_state = model.train(
-    iterations=1_000_000, callbacks=[variable, plotter_callback]
+    iterations=250_000, callbacks=[variable, plotter_callback]
 )
 
 dde.saveplot(losshistory, train_state)
