@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-loss_arr = np.loadtxt("loss.dat")
+loss_arr = np.loadtxt("out_files/loss.dat")
 
 steps = loss_arr[:, 0]
 physics_loss = loss_arr[:, 1]
