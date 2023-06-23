@@ -72,7 +72,6 @@ class MsFNN(NN):
             self._fourier_feature_forward(x, self.b[i]) for i in range(len(self.sigmas))
         ]
         y = [elem[0] for elem in yb]
-        print([yt.shape for yt in y])
 
         self.fourier_feature_weights = [elem[1] for elem in yb]
 
