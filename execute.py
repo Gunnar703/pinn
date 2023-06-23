@@ -9,13 +9,12 @@ import deepxde as dde
 import numpy as np
 import os
 import torch
-from scipy.integrate import solve_ivp
 from generate_data import get_data
 
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# Create the argument parser
+# # Create the argument parser
 parser = argparse.ArgumentParser()
 
 # Add the command line argument
@@ -197,6 +196,7 @@ pde = dde.data.PDE(
     vi + xi,
     num_domain=1000,
     num_boundary=2,
+    anchors=data["t"].reshape(-1, 1),
 )
 
 # %% [markdown]
@@ -217,6 +217,8 @@ plotter_callback = PlotterCallback(
     u_max=U_MAX,
     plot_residual=False,
 )
+
+resampler = dde.callbacks.PDEPointResampler(period=10_000)
 
 net = dde.nn.FNN(
     layer_sizes=[1] + 8 * [100] + [4],
@@ -258,14 +260,8 @@ for path in ["/".join(entry) for entry in necessary_directories]:
 # %%
 model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=150_000, callbacks=[variable, plotter_callback]
+    iterations=500_000, callbacks=[variable, plotter_callback, resampler]
 )
-
-model.compile(optimizer="adam", lr=1e-6, external_trainable_variables=E)
-losshistory, train_state = model.train(
-    iterations=150_000, callbacks=[variable, plotter_callback]
-)
-
 
 dde.saveplot(
     losshistory,
