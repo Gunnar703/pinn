@@ -15,7 +15,7 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# Create the argument parser
+# # Create the argument parser
 parser = argparse.ArgumentParser()
 
 # Add the command line argument
@@ -205,7 +205,7 @@ pde = dde.data.PDE(
 # %%
 # Callbacks
 variable = dde.callbacks.VariableValue(
-    var_list=[E], period=checkpoint_interval, filename="variables.dat"
+    var_list=[E], period=checkpoint_interval, filename="out_files/variables.dat"
 )
 
 plotter_callback = PlotterCallback(
@@ -224,9 +224,6 @@ net = dde.nn.FNN(
     kernel_initializer="Glorot uniform",
 )
 model = dde.Model(pde, net)
-
-model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
-
 
 # %% [markdown]
 # ## Make sure directories exist and are empty
@@ -257,12 +254,45 @@ for path in ["/".join(entry) for entry in necessary_directories]:
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (filepath, e))
 
+# %% [markdown]
+# ## Train the Model
+
 # %%
-losshistory, train_state = model.train(
-    iterations=250_000, callbacks=[variable, plotter_callback]
+model.compile(optimizer="adam", lr=1e-3, external_trainable_variables=E)
+model.train(iterations=10_000, callbacks=[plotter_callback, variable])
+model.compile("L-BFGS", external_trainable_variables=E)
+model.train(callbacks=[plotter_callback, variable])
+
+X = geom.random_points(1_000)
+err = 1
+while err > 0.005:
+    f = model.predict(X, operator=pde)
+    err_eq = np.absolute(f)
+    err = np.mean(err_eq)
+    print("Mean residual: %.3e" % (err))
+
+    x_id = np.argmax(err_eq)
+    print("Adding new point:", X[x_id], "\n")
+    data.add_anchors(X[x_id])
+    early_stopping = dde.callbacks.EarlyStopping(min_delta=1e-4, patience=2000)
+    model.compile("adam", lr=1e-3)
+    model.train(
+        iterations=10000,
+        disregard_previous_best=True,
+        callbacks=[early_stopping, plotter_callback, variable],
+    )
+    model.compile("L-BFGS")
+    losshistory, train_state = model.train(callbacks=[plotter_callback, variable])
+
+# %% [markdown]
+# ## Save the model and loss history
+
+# %%
+dde.saveplot(
+    losshistory,
+    train_state,
+    loss_fname="out_files/loss.dat",
+    train_fname="out_files/train.dat",
+    test_fname="out_files/test.dat",
 )
-
-dde.saveplot(losshistory, train_state)
 model.save("model_files/model")
-
-# %%
