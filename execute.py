@@ -258,8 +258,8 @@ for path in ["/".join(entry) for entry in necessary_directories]:
 # ## Train the Model
 
 # %%
-model.compile(optimizer="adam", lr=1e-3, external_trainable_variables=E)
-model.train(iterations=10_000, callbacks=[plotter_callback, variable])
+model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
+model.train(iterations=100_000, callbacks=[plotter_callback, variable])
 model.compile("L-BFGS", external_trainable_variables=E)
 model.train(callbacks=[plotter_callback, variable])
 
@@ -274,14 +274,14 @@ while err > 0.005:
     x_id = np.argmax(err_eq)
     print("Adding new point:", X[x_id], "\n")
     data.add_anchors(X[x_id])
-    early_stopping = dde.callbacks.EarlyStopping(min_delta=1e-4, patience=2000)
-    model.compile("adam", lr=1e-3)
+    early_stopping = dde.callbacks.EarlyStopping(min_delta=1e-6, patience=2000)
+    model.compile("adam", lr=1e-5, external_trainable_variables=E)
     model.train(
-        iterations=10000,
+        iterations=100_000,
         disregard_previous_best=True,
         callbacks=[early_stopping, plotter_callback, variable],
     )
-    model.compile("L-BFGS")
+    model.compile("L-BFGS", external_trainable_variables=E)
     losshistory, train_state = model.train(callbacks=[plotter_callback, variable])
 
 # %% [markdown]
