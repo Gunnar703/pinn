@@ -261,6 +261,11 @@ if not os.path.exists("out_files"):
 # ## Train the Model
 
 # %%
+X = geom.random_points(1_000)
+f = model.predict(X, operator=ode_sys)
+print("X:", X.shape)
+print("f mean:", f.mean(axis=1).shape)
+
 model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 model.train(iterations=50_000, callbacks=[plotter_callback, variable])
 model.compile("L-BFGS", external_trainable_variables=E)
@@ -269,7 +274,7 @@ model.train(callbacks=[plotter_callback, variable])
 X = geom.random_points(1_000)
 err = 1
 while err > 0.005:
-    f = model.predict(X, operator=ode_sys)
+    f = model.predict(X, operator=ode_sys).mean(axis=1)
     err_eq = np.absolute(f)
     err = np.mean(err_eq)
     print("Mean residual: %.3e" % (err))
