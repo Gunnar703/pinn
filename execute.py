@@ -251,7 +251,7 @@ net = MsFNN(
 model = dde.Model(pde, net)
 model.compile(optimizer="adam", lr=1e-4, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=50_000, callbacks=[variable, plotter_callback, resampler]
+    iterations=100_000, callbacks=[variable, plotter_callback, resampler]
 )
 
 
