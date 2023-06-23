@@ -215,6 +215,9 @@ for path in ["/".join(entry) for entry in necessary_directories]:
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (filepath, e))
 
+if not os.path.exists("out_files"):
+    os.mkdir("out_files")
+
 # %% [markdown]
 # ## Define the Network
 
