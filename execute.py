@@ -15,19 +15,19 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# # Create the argument parser
-# parser = argparse.ArgumentParser()
+# Create the argument parser
+parser = argparse.ArgumentParser()
 
-# # Add the command line argument
-# parser.add_argument(
-#     "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
-# )
+# Add the command line argument
+parser.add_argument(
+    "--checkpoint-interval", type=int, help="Interval for saving plots/checkpoints."
+)
 
-# # Parse the arguments
-# args = parser.parse_args()
+# Parse the arguments
+args = parser.parse_args()
 
-# # Access the value of the command line argument
-# checkpoint_interval = args.checkpoint_interval
+# Access the value of the command line argument
+checkpoint_interval = args.checkpoint_interval
 
 # %% [markdown]
 # ## Import Data
@@ -262,7 +262,7 @@ if not os.path.exists("out_files"):
 
 # %%
 model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
-model.train(iterations=100_000, callbacks=[plotter_callback, variable])
+model.train(iterations=50_000, callbacks=[plotter_callback, variable])
 model.compile("L-BFGS", external_trainable_variables=E)
 model.train(callbacks=[plotter_callback, variable])
 
@@ -281,7 +281,7 @@ while err > 0.005:
     early_stopping = dde.callbacks.EarlyStopping(min_delta=1e-6, patience=2000)
     model.compile("adam", lr=1e-5, external_trainable_variables=E)
     model.train(
-        iterations=50_000,
+        iterations=20_000,
         disregard_previous_best=True,
         callbacks=[early_stopping, plotter_callback, variable],
     )
