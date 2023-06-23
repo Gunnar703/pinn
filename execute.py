@@ -205,7 +205,7 @@ pde = dde.data.PDE(
 # %%
 # Callbacks
 variable = dde.callbacks.VariableValue(
-    var_list=[E], period=checkpoint_interval, filename="variables.dat"
+    var_list=[E], period=checkpoint_interval, filename="out_files/variables.dat"
 )
 
 plotter_callback = PlotterCallback(
@@ -224,8 +224,6 @@ net = dde.nn.FNN(
     kernel_initializer="Glorot uniform",
 )
 model = dde.Model(pde, net)
-
-model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 
 
 # %% [markdown]
@@ -258,11 +256,24 @@ for path in ["/".join(entry) for entry in necessary_directories]:
             print("Failed to delete %s. Reason: %s" % (filepath, e))
 
 # %%
+model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=250_000, callbacks=[variable, plotter_callback]
+    iterations=150_000, callbacks=[variable, plotter_callback]
 )
 
-dde.saveplot(losshistory, train_state)
+model.compile(optimizer="adam", lr=1e-6, external_trainable_variables=E)
+losshistory, train_state = model.train(
+    iterations=150_000, callbacks=[variable, plotter_callback]
+)
+
+
+dde.saveplot(
+    losshistory,
+    train_state,
+    loss_fname="out_files/loss.dat",
+    train_fname="out_files/train.dat",
+    test_fname="out_files/test.dat",
+)
 model.save("model_files/model")
 
 # %%
