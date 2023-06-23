@@ -14,7 +14,7 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# # Create the argument parser
+# Create the argument parser
 parser = argparse.ArgumentParser()
 
 # Add the command line argument
@@ -221,7 +221,7 @@ plotter_callback = PlotterCallback(
 resampler = dde.callbacks.PDEPointResampler(period=10_000)
 
 net = dde.nn.FNN(
-    layer_sizes=[1] + 8 * [100] + [4],
+    layer_sizes=[1] + 10 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
 )
@@ -262,6 +262,9 @@ model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
     iterations=500_000, callbacks=[variable, plotter_callback, resampler]
 )
+
+X = geom.random_points(5_000)
+
 
 dde.saveplot(
     losshistory,
