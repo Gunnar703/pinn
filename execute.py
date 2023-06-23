@@ -194,7 +194,7 @@ ai = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi + xi + ai,
+    vi + xi,
     num_domain=1000,
     num_boundary=2,
 )
