@@ -254,6 +254,9 @@ for path in ["/".join(entry) for entry in necessary_directories]:
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (filepath, e))
 
+if not os.path.exists("out_files"):
+    os.path.mkdir("out_files")
+
 # %% [markdown]
 # ## Train the Model
 
@@ -270,14 +273,15 @@ while err > 0.005:
     err_eq = np.absolute(f)
     err = np.mean(err_eq)
     print("Mean residual: %.3e" % (err))
+    print(f"E = {E}")
 
     x_id = np.argmax(err_eq)
     print("Adding new point:", X[x_id], "\n")
-    data.add_anchors(X[x_id])
+    pde.add_anchors(X[x_id])
     early_stopping = dde.callbacks.EarlyStopping(min_delta=1e-6, patience=2000)
     model.compile("adam", lr=1e-5, external_trainable_variables=E)
     model.train(
-        iterations=100_000,
+        iterations=50_000,
         disregard_previous_best=True,
         callbacks=[early_stopping, plotter_callback, variable],
     )
