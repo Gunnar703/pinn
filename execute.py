@@ -10,6 +10,7 @@ import numpy as np
 import os
 import torch
 from generate_data import get_data
+from msfnn import MsFNN
 
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
@@ -68,8 +69,8 @@ for name in data:
 a0, a1 = data["Damp_param"]
 
 # Get Constant Tensors ready
-M = torch.Tensor(data["M"]).to("cuda")
-Kb = torch.Tensor(data["k_basis"]).to("cuda")
+M = torch.Tensor(data["M"])
+Kb = torch.Tensor(data["k_basis"])
 
 
 # Define interpolation of F. Returns M x N_DIM tensor.
@@ -176,20 +177,6 @@ xi = [
     dde.icbc.PointSetBC(t_data, data["Disp_4_2D"].reshape(-1, 1), component=3),
 ]
 
-# Acceleration BC
-ai = [
-    dde.icbc.PointSetOperatorBC(
-        t_data,
-        data["Acc_3_2D"].reshape(-1, 1),
-        lambda t, u, X: differentiate_output(t, u, 1, 2),
-    ),
-    dde.icbc.PointSetOperatorBC(
-        t_data,
-        data["Acc_4_2D"].reshape(-1, 1),
-        lambda t, u, X: differentiate_output(t, u, 3, 2),
-    ),
-]
-
 pde = dde.data.PDE(
     geom,
     ode_sys,
@@ -198,35 +185,6 @@ pde = dde.data.PDE(
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
 )
-
-# %% [markdown]
-# ## Define the Network
-
-# %%
-# Callbacks
-variable = dde.callbacks.VariableValue(
-    var_list=[E], period=checkpoint_interval, filename="out_files/variables.dat"
-)
-
-plotter_callback = PlotterCallback(
-    period=checkpoint_interval,
-    filepath="plots/training",
-    data=data,
-    E=E,
-    t_max=T_MAX,
-    u_max=U_MAX,
-    plot_residual=False,
-)
-
-resampler = dde.callbacks.PDEPointResampler(period=10_000)
-
-net = dde.nn.FNN(
-    layer_sizes=[1] + 10 * [100] + [4],
-    activation="tanh",
-    kernel_initializer="Glorot uniform",
-)
-model = dde.Model(pde, net)
-
 
 # %% [markdown]
 # ## Make sure directories exist and are empty
@@ -257,13 +215,44 @@ for path in ["/".join(entry) for entry in necessary_directories]:
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (filepath, e))
 
+# %% [markdown]
+# ## Define the Network
+
 # %%
-model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
-losshistory, train_state = model.train(
-    iterations=500_000, callbacks=[variable, plotter_callback, resampler]
+# Callbacks
+variable = dde.callbacks.VariableValue(
+    var_list=[E], period=checkpoint_interval, filename="out_files/variables.dat"
 )
 
-X = geom.random_points(5_000)
+plotter_callback = PlotterCallback(
+    period=checkpoint_interval,
+    filepath="plots/training",
+    data=data,
+    E=E,
+    t_max=T_MAX,
+    u_max=U_MAX,
+    plot_residual=False,
+)
+
+resampler = dde.callbacks.PDEPointResampler(period=10_000)
+
+
+# %% [markdown]
+# ## Create, Compile, and Train Network
+
+# %%
+net = MsFNN(
+    layer_sizes=[1] + 10 * [100] + [4],
+    activation="tanh",
+    kernel_initializer="Glorot uniform",
+    sigmas=[1, 10, 20, 50],
+)
+
+model = dde.Model(pde, net)
+model.compile(optimizer="adam", lr=1e-4, external_trainable_variables=E)
+losshistory, train_state = model.train(
+    iterations=50_000, callbacks=[variable, plotter_callback, resampler]
+)
 
 
 dde.saveplot(
@@ -273,6 +262,6 @@ dde.saveplot(
     train_fname="out_files/train.dat",
     test_fname="out_files/test.dat",
 )
-model.save("model_files/model")
+model.save("model_files/msfnn")
 
 # %%
