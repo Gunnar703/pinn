@@ -31,6 +31,25 @@ checkpoint_interval = args.checkpoint_interval
 
 # %% [markdown]
 # ## Import Data
+#
+# ### Non-dimensionalization
+# ODE is non-dimensionalized as follows.
+# Let
+# $$u = u_cu^*$$
+# $$t = t_ct^*$$
+# $$E = E_cE^*$$
+# Therefore,
+# $$\frac{du}{dt} = \frac{u_c}{t}\frac{du^*}{dt^*}$$
+# $$\frac{d^2u}{dt^2} = \frac{u_c}{t^2}\frac{d^2u^*}{dt^{*2}}$$
+# $$\frac{u_c}{t^2} [M] \frac{d^2u^*}{dt^{*2}} + \frac{u_c}{t} [C] \frac{du^*}{dt^*} + u_c[K]u^* = F\left(t_ct^*\right)$$
+# $$\iff$$
+# $$\frac{u_c}{t^2} [M] \frac{d^2u^*}{dt^{*2}} + \frac{u_c}{t} \left( a_0[M] + a_1E_cE^*[K_b] \right) \frac{du^*}{dt^*} + u_cE_cE^*[K_b]u^* = F\left(t_ct^*\right)$$
+# Further let
+# $$u_c\equiv \max{u}$$
+# $$t_c\equiv \max{t}$$
+# $$E_c\equiv \max{\mathbb{E}}$$
+# where $\mathbb{E}$ is the space of all reasonable values of $E$. (chosen here to be $10^8$).
+# Now all network inputs, outputs, and ODE parameters are on the interval $[0,1]$
 
 # %%
 fn = "data"
@@ -182,7 +201,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi + xi,
+    xi,
     num_domain=1000,
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
