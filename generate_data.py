@@ -1,5 +1,4 @@
 import openseespy.opensees as ops
-import os as os
 import numpy as np
 import os
 

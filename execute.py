@@ -61,23 +61,12 @@ data = {
     for name in dirs
 }
 
-# Use FDM to get accelerations
-acc_3 = (data["Vel_3_2D"][1:] - data["Vel_3_2D"][:-1]) / (
-    data["t"][1:] - data["t"][:-1]
-)
-acc_4 = (data["Vel_4_2D"][1:] - data["Vel_4_2D"][:-1]) / (
-    data["t"][1:] - data["t"][:-1]
-)
-
-data["Acc_3_2D"] = np.zeros_like(data["t"])
-data["Acc_4_2D"] = np.zeros_like(data["t"])
-
-data["Acc_3_2D"][1:] = acc_3
-data["Acc_4_2D"][1:] = acc_4
-
 # Normalize Data
 T_MAX = data["t"].max()
 U_MAX = max(data["Disp_3_2D"].max(), data["Disp_4_2D"].max())
+
+T_MAX = 1
+U_MAX = 1
 
 data["t"] /= T_MAX
 for name in data:
@@ -146,7 +135,6 @@ def ode_sys(t, u):
     y_t = y_t.permute((1, 0))
     y_tt = y_tt.permute((1, 0))
 
-    # Whatever E is learned to be, it is actually 1e8 times that value
     U = y * U_MAX
     DU_DT = y_t * U_MAX / T_MAX
     D2U_DT2 = y_tt * U_MAX / T_MAX**2
