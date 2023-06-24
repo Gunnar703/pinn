@@ -6,7 +6,9 @@ import torch
 
 
 class PlotterCallback(dde.callbacks.Callback):
-    def __init__(self, period, filepath, data, t_max, u_max, plot_residual=False):
+    def __init__(
+        self, period, filepath, data, E_learned, t_max, u_max, plot_residual=False
+    ):
         super().__init__()
         self.period = period
         self.filepath = filepath
@@ -15,6 +17,8 @@ class PlotterCallback(dde.callbacks.Callback):
         self.plot_residual = plot_residual
         self.T_MAX = t_max
         self.U_MAX = u_max
+
+        self.E_learned = E_learned
 
         self.k_basis = torch.Tensor(self.data["k_basis"]).to("cuda")
         self.M = torch.Tensor(self.data["M"]).to("cuda")
@@ -68,7 +72,7 @@ class PlotterCallback(dde.callbacks.Callback):
         if self.epoch % self.period != 0:
             return
         fig, axes = plt.subplots(4, 1, figsize=(8, 6))
-        fig.suptitle(f"Epoch: {self.epoch}" + "\n")
+        fig.suptitle(f"Epoch: {self.epoch}" + "\n" + "E = %.3g" % self.E_learned)
 
         v_pred = self.model.predict(
             self.data["t"].reshape(-1, 1), operator=self.differentiate_model_output
