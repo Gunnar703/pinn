@@ -65,9 +65,6 @@ data = {
 T_MAX = data["t"].max()
 U_MAX = max(data["Disp_3_2D"].max(), data["Disp_4_2D"].max())
 
-T_MAX = 1
-U_MAX = 1
-
 data["t"] /= T_MAX
 for name in data:
     if "Disp" in name:
@@ -121,14 +118,16 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(0.6)
+# E = dde.Variable(0.6)
+K = dde.Variable(torch.rand((4, 4)))
+K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
+    k = K * 1e8
     F = load(t)
-    K = Kb * E**2 * 1e8
-    C = a0 * M + a1 * K
+    C = a0 * M + a1 * k
 
     y_t, y_tt = get_u_derivatives(t, u)
     y = u.permute((1, 0))
@@ -141,7 +140,7 @@ def ode_sys(t, u):
 
     mass_term = M @ D2U_DT2
     damp_term = C @ DU_DT
-    stiff_term = K @ U
+    stiff_term = k @ U
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
@@ -243,14 +242,13 @@ if not os.path.exists("out_files"):
 # %%
 # Callbacks
 variable = dde.callbacks.VariableValue(
-    var_list=[E], period=checkpoint_interval, filename="out_files/variables.dat"
+    var_list=K_list, period=checkpoint_interval, filename="out_files/variables.dat"
 )
 
 plotter_callback = PlotterCallback(
     period=checkpoint_interval,
     filepath="plots/training",
     data=data,
-    E=E,
     t_max=T_MAX,
     u_max=U_MAX,
     plot_residual=False,
@@ -271,13 +269,13 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
+model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=K)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-model.compile(optimizer="L-BFGS", external_trainable_variables=E)
-model.train()
+model.compile(optimizer="L-BFGS", external_trainable_variables=K)
+model.train(callbacks=[variable, plotter_callback, resampler])
 
 dde.utils.external.save_best_state(
     train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
@@ -293,3 +291,12 @@ dde.saveplot(
 model.save("model_files/msfnn")
 
 # %%
+Knp = K.detach().cpu().numpy()
+fig, ax = plt.subplots(nrows=1, ncols=2)
+ax[0].imshow(data["K"] * 1e8)
+ax[0].set_title("True K")
+ax[0].axis("off")
+ax[1].imshow(Knp)
+ax[1].set_Title("Predicted K")
+ax[1].axis("off")
+plt.savefig("media/K_comparison.png", bbox_inches="tight")
