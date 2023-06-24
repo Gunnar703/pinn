@@ -9,6 +9,7 @@ import deepxde as dde
 import numpy as np
 import os
 import torch
+from scipy.integrate import odeint
 from generate_data import get_data
 from msfnn import MsFNN
 
@@ -100,6 +101,38 @@ def load(t: torch.Tensor):
     return ret * 1e3  # convert kN -> N
 
 
+def scipy_ode(y, t):
+    u = y[:4].reshape(-1, 1)
+    u_t = y[4:].reshape(-1, 1)
+
+    f = np.zeros((4, 1))
+    f = -load(np.array([t]))
+
+    u_tt = (
+        T_MAX**2
+        / U_MAX
+        * np.linalg.inv(data["M"])
+        @ (f - U_MAX / T_MAX * data["C"] @ u_t - U_MAX * data["K"] @ u)
+    )
+    return np.hstack((u_t.squeeze(), u_tt.squeeze())).squeeze()
+
+
+u0 = np.zeros(8)
+sol = odeint(scipy_ode, u0, data["t"]).T[4:]
+print(sol.shape)
+fig, ax = plt.subplots(nrows=4, ncols=1, figsize=(8, 6))
+for dim in range(4):
+    axes = ax[dim]
+    axes.plot(data["t"], sol[dim], color="gray", label="RK")
+    if dim == 1:
+        axes.plot(data["t"], data["Vel_3_2D"], color="orange", label="Data")
+    elif dim == 3:
+        axes.plot(data["t"], data["Vel_4_2D"], color="orange", label="Data")
+    elif dim == 0:
+        axes.legend()
+fig.suptitle("Velocity Data")
+plt.savefig("media/training_data.png", bbox_inches="tight")
+
 # %% [markdown]
 # ## Define the PDE
 
@@ -118,15 +151,15 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-# E = dde.Variable(0.6)
-K = dde.Variable(torch.rand((4, 4)))
-K_list = [elem for elem in K.reshape(1, -1).squeeze()]
+E = dde.Variable(0.6)
+# K = dde.Variable(torch.rand((4, 4)))
+# K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = K * 1e8
-    F = load(t)
+    k = Kb * E**2 * 1e8
+    F = -load(t)
     C = a0 * M + a1 * k
 
     y_t, y_tt = get_u_derivatives(t, u)
@@ -199,7 +232,7 @@ pde = dde.data.PDE(
     geom,
     ode_sys,
     vi,
-    num_domain=1000,
+    num_domain=1500,
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
 )
@@ -242,13 +275,14 @@ if not os.path.exists("out_files"):
 # %%
 # Callbacks
 variable = dde.callbacks.VariableValue(
-    var_list=K_list, period=checkpoint_interval, filename="out_files/variables.dat"
+    var_list=E, period=checkpoint_interval, filename="out_files/variables.dat"
 )
 
 plotter_callback = PlotterCallback(
     period=checkpoint_interval,
     filepath="plots/training",
     data=data,
+    E_learned=E,
     t_max=T_MAX,
     u_max=U_MAX,
     plot_residual=False,
@@ -269,12 +303,12 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=K)
+model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-model.compile(optimizer="L-BFGS", external_trainable_variables=K)
+model.compile(optimizer="L-BFGS", external_trainable_variables=E)
 model.train(callbacks=[variable, plotter_callback, resampler])
 
 dde.utils.external.save_best_state(
@@ -291,12 +325,12 @@ dde.saveplot(
 model.save("model_files/msfnn")
 
 # %%
-Knp = K.detach().cpu().numpy()
-fig, ax = plt.subplots(nrows=1, ncols=2)
-ax[0].imshow(data["K"] * 1e8)
-ax[0].set_title("True K")
-ax[0].axis("off")
-ax[1].imshow(Knp)
-ax[1].set_Title("Predicted K")
-ax[1].axis("off")
-plt.savefig("media/K_comparison.png", bbox_inches="tight")
+# Knp = K.detach().cpu().numpy()
+# fig, ax = plt.subplots(nrows=1, ncols=2)
+# ax[0].imshow(data["K"] * 1e8)
+# ax[0].set_title("True K")
+# ax[0].axis('off')
+# ax[1].imshow(Knp)
+# ax[1].set_title("Predicted K")
+# ax[1].axis('off')
+# plt.savefig("media/K_comparison.png", bbox_inches="tight")
