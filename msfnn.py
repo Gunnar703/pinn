@@ -57,7 +57,7 @@ class MsFNN(NN):
             initializer_zero(self.linears[-1].bias)
 
         self._dense = torch.nn.Linear(
-            layer_sizes[-2] * 4, layer_sizes[-1], dtype=config.real(torch)
+            layer_sizes[-2] * len(sigmas), layer_sizes[-1], dtype=config.real(torch)
         )
         initializer(self._dense.weight)
         initializer_zero(self._dense.bias)
