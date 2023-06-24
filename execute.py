@@ -237,7 +237,7 @@ plotter_callback = PlotterCallback(
     plot_residual=False,
 )
 
-resampler = dde.callbacks.PDEPointResampler(period=10_000)
+resampler = dde.callbacks.PDEPointResampler(period=1_000)
 
 
 # %% [markdown]
@@ -245,18 +245,24 @@ resampler = dde.callbacks.PDEPointResampler(period=10_000)
 
 # %%
 net = MsFNN(
-    layer_sizes=[1] + 4 * [100] + [4],
+    layer_sizes=[1] + 10 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
-    sigmas=[1, 10, 20, 50],
+    sigmas=[1, 10, 50],
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=1e-4, external_trainable_variables=E)
+model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=100_000, callbacks=[variable, plotter_callback, resampler]
+    iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
+model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+model.train()
+
+dde.utils.external.save_best_state(
+    train_state, "model_files/best_training_loss", "model_files/best_test_loss"
+)
 
 dde.saveplot(
     losshistory,
