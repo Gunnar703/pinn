@@ -117,7 +117,7 @@ E = dde.Variable(0.6)
 # ODE definition
 def ode_sys(t, u):
     F = load(t)
-    K = Kb * torch.abs(E) * 1e8
+    K = Kb * E**2 * 1e8
     C = a0 * M + a1 * K
 
     y_t, y_tt = get_u_derivatives(t, u)

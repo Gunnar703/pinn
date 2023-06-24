@@ -69,12 +69,7 @@ class PlotterCallback(dde.callbacks.Callback):
         if self.epoch % self.period != 0:
             return
         fig, axes = plt.subplots(4, 1, figsize=(8, 6))
-        fig.suptitle(
-            f"Epoch: {self.epoch}"
-            + "\n"
-            + "E = %.3f" % np.abs(float(self.E.detach().cpu().item()))
-            + "\n"
-        )
+        fig.suptitle(f"Epoch: {self.epoch}" + "\n" + "E = %.3f" % self.E**2 + "\n")
 
         v_pred = self.model.predict(
             self.data["t"].reshape(-1, 1), operator=self.differentiate_model_output
