@@ -75,8 +75,8 @@ Kb = torch.Tensor(data["k_basis"])
 
 # Define interpolation of F. Returns M x N_DIM tensor.
 def load(t: torch.Tensor):
-    x = t
-    xp = data["t"]
+    x = t * T_MAX
+    xp = data["t"] * T_MAX
     fp = data["load"]
     if isinstance(t, torch.Tensor):
         x = x.detach().cpu().numpy().squeeze()
@@ -117,7 +117,7 @@ E = dde.Variable(0.6)
 # ODE definition
 def ode_sys(t, u):
     F = load(t)
-    K = Kb * torch.abs(E)
+    K = Kb * torch.abs(E) * 1e8
     C = a0 * M + a1 * K
 
     y_t, y_tt = get_u_derivatives(t, u)
@@ -130,13 +130,13 @@ def ode_sys(t, u):
     DU_DT = y_t * U_MAX / T_MAX
     D2U_DT2 = y_tt * U_MAX / T_MAX**2
 
-    mass_term = M @ D2U_DT2 / 1e8
-    damp_term = (a1 * Kb * E) @ DU_DT + (a0 * M) / 1e8 @ DU_DT
-    stiff_term = (Kb * E) @ U
-    force_term = F / 1e8
+    mass_term = M @ D2U_DT2
+    damp_term = C @ DU_DT
+    stiff_term = K @ U
+    force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual
+    return residual / 1e8
 
 
 # Boundary conditions definition
@@ -180,7 +180,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi + xi,
+    vi,
     num_domain=1000,
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
@@ -245,7 +245,7 @@ resampler = dde.callbacks.PDEPointResampler(period=10_000)
 
 # %%
 net = MsFNN(
-    layer_sizes=[1] + 10 * [100] + [4],
+    layer_sizes=[1] + 4 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
     sigmas=[1, 10, 20, 50],
