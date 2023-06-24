@@ -62,8 +62,10 @@ U_MAX = max(data["Disp_3_2D"].max(), data["Disp_4_2D"].max())
 
 data["t"] /= T_MAX
 for name in data:
-    if "Vel" in name or "Disp" in name:
+    if "Disp" in name:
         data[name] /= U_MAX
+    elif "Vel" in name:
+        data[name] *= T_MAX / U_MAX
 
 # For convenience
 a0, a1 = data["Damp_param"]
@@ -245,14 +247,14 @@ resampler = dde.callbacks.PDEPointResampler(period=1_000)
 
 # %%
 net = MsFNN(
-    layer_sizes=[1] + 10 * [100] + [4],
+    layer_sizes=[1] + 5 * [100] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
     sigmas=[1, 10, 50],
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=1e-5, external_trainable_variables=E)
+model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
@@ -261,7 +263,7 @@ model.compile(optimizer="L-BFGS", external_trainable_variables=E)
 model.train()
 
 dde.utils.external.save_best_state(
-    train_state, "model_files/best_training_loss", "model_files/best_test_loss"
+    train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
 )
 
 dde.saveplot(
