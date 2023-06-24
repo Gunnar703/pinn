@@ -180,7 +180,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi,
+    vi + xi,
     num_domain=1000,
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
