@@ -190,6 +190,16 @@ vi = [
         data["Vel_4_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 3, 1),
     ),
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Vel_3_1_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 0, 1),
+    ),
+    dde.icbc.PointSetOperatorBC(
+        t_data,
+        data["Vel_4_1_2D"].reshape(-1, 1),
+        lambda t, u, X: differentiate_output(t, u, 2, 1),
+    ),
 ]
 
 # Position BC
@@ -201,7 +211,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    xi,
+    vi,
     num_domain=1000,
     num_boundary=2,
     anchors=data["t"].reshape(-1, 1),
