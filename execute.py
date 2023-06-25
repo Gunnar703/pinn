@@ -151,14 +151,14 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(0.6)
+E = dde.Variable(data["Y"])
 # K = dde.Variable(torch.rand((4, 4)))
 # K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = Kb * E**2 * 1e8
+    k = Kb * E
     F = -load(t)
     C = a0 * M + a1 * k
 
@@ -202,22 +202,26 @@ v0 = [
 vi = [
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_3_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_3_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 1, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_4_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_4_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 3, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_3_1_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_3_1_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 0, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_4_1_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_4_1_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 2, 1),
     ),
 ]
@@ -302,13 +306,20 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
+model.compile(optimizer="adam", lr=5e-5)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+model.compile(optimizer="L-BFGS")
 model.train(callbacks=[variable, plotter_callback, resampler])
+# model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
+# losshistory, train_state = model.train(
+#     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
+# )
+
+# model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+# model.train(callbacks=[variable, plotter_callback, resampler])
 
 dde.utils.external.save_best_state(
     train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
