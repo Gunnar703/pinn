@@ -177,7 +177,7 @@ def ode_sys(t, u):
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual
+    return residual / 1e5
 
 
 # Boundary conditions definition
