@@ -177,7 +177,7 @@ def ode_sys(t, u):
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual / 1e8
+    return residual
 
 
 # Boundary conditions definition
@@ -234,7 +234,6 @@ pde = dde.data.PDE(
     vi,
     num_domain=1500,
     num_boundary=2,
-    anchors=data["t"].reshape(-1, 1),
 )
 
 # %% [markdown]
