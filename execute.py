@@ -151,14 +151,14 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(0.6)
+E = dde.Variable(data["Y"])
 # K = dde.Variable(torch.rand((4, 4)))
 # K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = Kb * E**2 * 1e8
+    k = Kb * E
     F = -load(t)
     C = a0 * M + a1 * k
 
@@ -177,7 +177,7 @@ def ode_sys(t, u):
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual / 1e8
+    return residual / 1e5
 
 
 # Boundary conditions definition
@@ -203,22 +203,26 @@ v0 = [
 vi = [
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_3_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_3_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 1, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_4_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_4_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 3, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_3_1_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_3_1_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 0, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        data["Vel_4_1_2D"].reshape(-1, 1),
+        zero_vector,
+        # data["Vel_4_1_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 2, 1),
     ),
 ]
@@ -229,13 +233,19 @@ xi = [
     dde.icbc.PointSetBC(t_data, data["Disp_4_2D"].reshape(-1, 1), component=3),
 ]
 
+x0 = [
+    dde.icbc.PointSetBC(t_data, zero_vector, component=1),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=2),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=3),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=4),
+]
+
 pde = dde.data.PDE(
     geom,
     ode_sys,
     vi,
     num_domain=1500,
     num_boundary=2,
-    anchors=data["t"].reshape(-1, 1),
 )
 
 # %% [markdown]
@@ -304,13 +314,20 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
+model.compile(optimizer="adam", lr=5e-5)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+model.compile(optimizer="L-BFGS")
 model.train(callbacks=[variable, plotter_callback, resampler])
+# model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
+# losshistory, train_state = model.train(
+#     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
+# )
+
+# model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+# model.train(callbacks=[variable, plotter_callback, resampler])
 
 dde.utils.external.save_best_state(
     train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
