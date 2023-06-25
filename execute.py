@@ -232,6 +232,13 @@ xi = [
     dde.icbc.PointSetBC(t_data, data["Disp_4_2D"].reshape(-1, 1), component=3),
 ]
 
+x0 = [
+    dde.icbc.PointSetBC(t_data, zero_vector, component=1),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=2),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=3),
+    dde.icbc.PointSetBC(t_data, zero_vector, component=4),
+]
+
 pde = dde.data.PDE(
     geom,
     ode_sys,
