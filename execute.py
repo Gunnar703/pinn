@@ -187,6 +187,7 @@ def differentiate_output(t, u, component, order):
     return dde.grad.hessian(u, t, component=component)
 
 
+#
 t_data = data["t"].reshape(-1, 1)
 zero_vector = np.array([[0]])
 
