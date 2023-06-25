@@ -187,7 +187,6 @@ def differentiate_output(t, u, component, order):
     return dde.grad.hessian(u, t, component=component)
 
 
-#
 t_data = data["t"].reshape(-1, 1)
 zero_vector = np.array([[0]])
 
@@ -204,40 +203,31 @@ vi = [
     dde.icbc.PointSetOperatorBC(
         t_data,
         zero_vector,
-        # data["Vel_3_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 1, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
         zero_vector,
-        # data["Vel_4_2D"].reshape(-1, 1),
+        data["Vel_4_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 3, 1),
     ),
-    dde.icbc.PointSetOperatorBC(
-        t_data,
-        zero_vector,
-        # data["Vel_3_1_2D"].reshape(-1, 1),
-        lambda t, u, X: differentiate_output(t, u, 0, 1),
-    ),
-    dde.icbc.PointSetOperatorBC(
-        t_data,
-        zero_vector,
-        # data["Vel_4_1_2D"].reshape(-1, 1),
-        lambda t, u, X: differentiate_output(t, u, 2, 1),
-    ),
+    # dde.icbc.PointSetOperatorBC(
+    #     t_data,
+    #     zero_vector,
+    #     data["Vel_3_1_2D"].reshape(-1, 1),
+    #     lambda t, u, X: differentiate_output(t, u, 0, 1),
+    # ),
+    # dde.icbc.PointSetOperatorBC(
+    #     t_data,
+    #     data["Vel_4_1_2D"].reshape(-1, 1),
+    #     lambda t, u, X: differentiate_output(t, u, 2, 1),
+    # ),
 ]
 
 # Position BC
 xi = [
     dde.icbc.PointSetBC(t_data, data["Disp_3_2D"].reshape(-1, 1), component=1),
     dde.icbc.PointSetBC(t_data, data["Disp_4_2D"].reshape(-1, 1), component=3),
-]
-
-x0 = [
-    dde.icbc.PointSetBC(t_data, zero_vector, component=1),
-    dde.icbc.PointSetBC(t_data, zero_vector, component=2),
-    dde.icbc.PointSetBC(t_data, zero_vector, component=3),
-    dde.icbc.PointSetBC(t_data, zero_vector, component=4),
 ]
 
 pde = dde.data.PDE(
