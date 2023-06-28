@@ -151,14 +151,14 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(data["Y"])
+E = dde.Variable(np.sqrt(0.6))
 # K = dde.Variable(torch.rand((4, 4)))
 # K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = Kb * E
+    k = Kb * E**2 * 1e8
     F = -load(t)
     C = a0 * M + a1 * k
 
@@ -177,7 +177,7 @@ def ode_sys(t, u):
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual / 1e5
+    return residual / 1e8
 
 
 # Boundary conditions definition
@@ -232,7 +232,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi,
+    vi + xi,
     num_domain=1500,
     num_boundary=2,
 )
