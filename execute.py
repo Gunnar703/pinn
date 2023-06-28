@@ -14,7 +14,7 @@ from generate_data import get_data
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
 
-# Create the argument parser
+# # Create the argument parser
 parser = argparse.ArgumentParser()
 
 # Add the command line argument
