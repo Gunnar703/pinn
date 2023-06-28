@@ -263,8 +263,6 @@ losshistory, train_state = model.train(
     iterations=500_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-X = geom.random_points(5_000)
-
 
 dde.saveplot(
     losshistory,
