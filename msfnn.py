@@ -36,12 +36,9 @@ class MsFNN(NN):
         self.b = []
         for sigma in self.sigmas:
             self.b.append(
-                torch.nn.Parameter(
-                    torch.normal(
-                        mean=0, std=sigma, size=(layer_sizes[0], layer_sizes[1] // 2)
-                    ),
-                    requires_grad=False,
-                )
+                torch.normal(
+                    mean=0, std=sigma, size=(layer_sizes[0], layer_sizes[1] // 2)
+                ).requires_grad_(True)
             )
 
         self.linears = torch.nn.ModuleList()

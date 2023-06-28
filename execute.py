@@ -202,12 +202,11 @@ v0 = [
 vi = [
     dde.icbc.PointSetOperatorBC(
         t_data,
-        zero_vector,
+        data["Vel_3_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 1, 1),
     ),
     dde.icbc.PointSetOperatorBC(
         t_data,
-        zero_vector,
         data["Vel_4_2D"].reshape(-1, 1),
         lambda t, u, X: differentiate_output(t, u, 3, 1),
     ),
