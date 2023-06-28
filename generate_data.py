@@ -1,7 +1,26 @@
 import openseespy.opensees as ops
-import os as os
+import matplotlib.pyplot as plt
 import numpy as np
 import os
+
+
+def generate_images(data_folder="data"):
+    RHO = 2 * 10**3
+    nu_list = np.linspace(0.2, 0.4, 100)
+    Vs_list = np.linspace(100, 400, 100)
+
+    nu_list, Vs_list = (x.reshape(-1, 1) for x in np.meshgrid(nu_list, Vs_list))
+
+    Vp_list = Vs_list * np.sqrt(2 * (1 - nu_list) / (1 - 2 * nu_list))
+    G_list = Vs_list**2 * RHO
+    Y_list = 2 * G_list / (1 + nu_list)
+    _, unique_indices = np.unique(Y_list, return_index=True)
+
+    Vp_list = Vp_list[unique_indices]
+    Vs_list = Vs_list[unique_indices]
+    nu_list = nu_list[unique_indices]
+    G_list = G_list[unique_indices]
+    Y_list = Y_list[unique_indices]
 
 
 def get_data(data_folder="data", nu=0.3, Vs=150):
@@ -124,3 +143,11 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     np.savetxt(f"{data_folder}/C.txt", C)
     np.savetxt(f"{data_folder}/K.txt", K)
     return Y, K
+
+
+def main():
+    generate_images(data_folder="data")
+
+
+if __name__ == "__main__":
+    main()
