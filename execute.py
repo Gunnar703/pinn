@@ -151,14 +151,14 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(data["Y"])
+E = dde.Variable(0.1)
 # K = dde.Variable(torch.rand((4, 4)))
 # K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = Kb * E
+    k = Kb * E**2 * 1e8
     F = -load(t)
     C = a0 * M + a1 * k
 
@@ -305,7 +305,7 @@ net = MsFNN(
 model = dde.Model(pde, net)
 model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=100_000, callbacks=[variable, plotter_callback, resampler]
+    iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
 model.compile(optimizer="L-BFGS", external_trainable_variables=E)
