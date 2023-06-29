@@ -151,14 +151,14 @@ def get_u_derivatives(t: torch.Tensor, u: torch.Tensor) -> tuple[torch.Tensor, .
 
 
 # Learnable parameter/s
-E = dde.Variable(np.sqrt(0.6))
+E = dde.Variable(data["Y"])
 # K = dde.Variable(torch.rand((4, 4)))
 # K_list = [elem for elem in K.reshape(1, -1).squeeze()]
 
 
 # ODE definition
 def ode_sys(t, u):
-    k = Kb * E**2 * 1e8
+    k = Kb * E
     F = -load(t)
     C = a0 * M + a1 * k
 
@@ -177,7 +177,7 @@ def ode_sys(t, u):
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
-    return residual / 1e8
+    return residual / 1e5
 
 
 # Boundary conditions definition
@@ -232,7 +232,7 @@ xi = [
 pde = dde.data.PDE(
     geom,
     ode_sys,
-    vi + xi,
+    vi,
     num_domain=1500,
     num_boundary=2,
 )
@@ -303,12 +303,12 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5)
+model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
 )
 
-model.compile(optimizer="L-BFGS")
+model.compile(optimizer="L-BFGS", external_trainable_variables=E)
 model.train(callbacks=[variable, plotter_callback, resampler])
 # model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 # losshistory, train_state = model.train(
