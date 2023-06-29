@@ -5,9 +5,23 @@ import os
 
 
 def generate_images(data_folder="data"):
+    """
+    Generate data images for CNN. Opensees docs: https://openseespydoc.readthedocs.io/en/latest/index.html
+
+    Args:
+        data_folder (str, optional): folder to save data in. Defaults to "data".
+    """
+
+    img_path = os.path.join(data_folder, "images")
+    if not os.path.exists(img_path):
+        os.mkdir(img_path)
+
+    for fn in os.listdir(img_path):
+        os.unlink(os.path.join(img_path, fn))
+
     RHO = 2 * 10**3
-    nu_list = np.linspace(0.2, 0.4, 100)
-    Vs_list = np.linspace(100, 400, 100)
+    nu_list = np.linspace(0.2, 0.4, 50)
+    Vs_list = np.linspace(100, 400, 50)
 
     nu_list, Vs_list = (x.reshape(-1, 1) for x in np.meshgrid(nu_list, Vs_list))
 
@@ -22,56 +36,7 @@ def generate_images(data_folder="data"):
     G_list = G_list[unique_indices]
     Y_list = Y_list[unique_indices]
 
-
-def get_data(data_folder="data", nu=0.3, Vs=150):
-    if not os.path.isdir(data_folder):
-        os.mkdir(data_folder)
-
-    ops.wipe()
-    ops.model("basic", "-ndm", 2, "-ndf", 2)
-
-    ops.node(1, 0, 0)
-    ops.node(2, 5, 0)
-    ops.node(3, 5, 5)
-    ops.node(4, 0, 5)
-
-    Rho = 2 * 10**3
-    # Vs = 150  # set as default arguments
-    # nu = 0.3  # set as default arguments
-    Vp = Vs * np.sqrt(2 * (1 - nu) / (1 - 2 * nu))
-    G = Vs**2 * Rho
-    Y = 2 * G / (1 + nu)  # only one element, so only one Y
-
-    np.savetxt(f"{data_folder}/Y.txt", np.array([Y]))
-
-    ops.nDMaterial("ElasticIsotropic", 100, Y, nu, Rho)
-    ops.element("quad", 1000, 1, 2, 3, 4, 1.0, "PlaneStrain", 100)
-
-    ops.fix(1, 1, 1, 1)
-    ops.fix(2, 1, 1, 1)
-
-    ## Velocity Recorders
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Vel_3_2D.txt", "-node", 3, "-dof", 2, "vel"
-    )
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Vel_4_2D.txt", "-node", 4, "-dof", 2, "vel"
-    )
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Vel_3_1_2D.txt", "-node", 3, "-dof", 1, "vel"
-    )
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Vel_4_1_2D.txt", "-node", 4, "-dof", 1, "vel"
-    )
-
-    ## Displacement Recorders
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Disp_3_2D.txt", "-node", 3, "-dof", 2, "disp"
-    )
-    ops.recorder(
-        "Node", "-file", f"{data_folder}/Disp_4_2D.txt", "-node", 4, "-dof", 2, "disp"
-    )
-
+    ## Get damping parameters
     omega1 = 2 * np.pi * 1.5  # 1.5 hz first mode
     omega2 = 2 * np.pi * 14
     damp1 = 0.05
@@ -80,10 +45,103 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
         (omega2**2) - (omega1**2)
     )
     a1 = (2 * damp2 * omega2 - 2 * damp1 * omega1) / ((omega2**2) - (omega1**2))
-    np.savetxt(f"{data_folder}/Damp_param.txt", np.array([a0, a1]))
 
-    time_history = f"{data_folder}/t.txt"
-    load_history = f"{data_folder}/load.txt"
+    # Save damping parameters
+    with open(os.path.join(data_folder, "Damp_params.txt"), "w") as f:
+        np.savetxt(f, np.array([a0, a1]))
+
+    K_list = []
+    for Y, nu in zip(Y_list.squeeze(), nu_list.squeeze()):
+        u1, u3, M, K = run_ops_once(
+            data_folder=data_folder,
+            nu=nu,
+            rho=RHO,
+            elastic_modulus=Y,
+            a0=a0,
+            a1=a1,
+            get_MCK=True,
+        )
+        image = np.hstack((u1.reshape(-1, 1), u3.reshape(-1, 1)))
+
+        K_list.append(K)
+
+        # Save image to data folder
+        with open(
+            os.path.join(data_folder, "images", "%s.dat" % str(Y).replace(".", "_")),
+            "w",
+        ) as f:
+            np.savetxt(f, image)
+
+    # Save M for later retrieval
+    with open(os.path.join(data_folder, "M.txt"), "w") as f:
+        np.savetxt(f, M)
+
+    # Turn K into a tensor and find K_basis
+    K_list = np.array(K_list)
+    print("K_list:", K_list.shape)
+    K_b = np.zeros_like(K_list[0])
+    for row in range(K_list.shape[1]):
+        for col in range(K_list.shape[2]):
+            K_ij = K_list[:, row, col]
+            E = Y_list
+
+            K_b[row, col] = np.linalg.lstsq(E, K_ij, rcond=None)[0].squeeze()
+
+    with open(os.path.join(data_folder, "K_basis.txt"), "w") as f:
+        np.savetxt(f, K_b)
+
+
+def run_ops_once(data_folder, nu, rho, elastic_modulus, a0, a1, get_MCK=False):
+    ops.wipe()
+    ops.model("basic", "-ndm", 2, "-ndf", 2)
+
+    # Create nodes
+    #   4 ----- 3  <- free
+    #   |       |
+    #   |   E   |
+    #   |       |
+    #   1 ----- 2  <- fixed
+
+    ops.node(1, 0, 0)  # (element_id, x, y)
+    ops.node(2, 5, 0)  # (element_id, x, y)
+    ops.node(3, 5, 5)  # (element_id, x, y)
+    ops.node(4, 0, 5)  # (element_id, x, y)
+
+    ops.fix(1, 1, 1, 1)  # (element_id, x, y, z): 0 = free, 1 = fixed
+    ops.fix(2, 1, 1, 1)  # (element_id, x, y, z): 0 = free, 1 = fixed
+
+    # Create element
+    # (material type, material_id, Young's modulus, Poisson's ratio, density)
+    ops.nDMaterial("ElasticIsotropic", 100, elastic_modulus, nu, rho)
+
+    # (element_type, element_id, [node_id]*4, thickness, behavior, material_id)
+    ops.element("quad", 1000, 1, 2, 3, 4, 1.0, "PlaneStrain", 100)
+
+    # Create Recorders
+    ops.recorder(
+        "Node",
+        "-file",
+        os.path.join(data_folder, "u1_tmp.txt"),
+        "-node",
+        3,
+        "-dof",
+        2,
+        "disp",
+    )
+    ops.recorder(
+        "Node",
+        "-file",
+        os.path.join(data_folder, "u3_tmp.txt"),
+        "-node",
+        4,
+        "-dof",
+        2,
+        "disp",
+    )
+
+    time_history = os.path.join(data_folder, "t.txt")
+    load_history = os.path.join(data_folder, "load.txt")
+
     ops.timeSeries(
         "Path", 300, "-fileTime", time_history, "-filePath", load_history, "-factor", 1
     )
@@ -95,54 +153,54 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     ops.integrator("Newmark", 0.5, 0.25)
     ops.numberer("RCM")
     ops.system("SparseGeneral")
-    # ops.constraints('Transformation')
+
     ops.test("NormDispIncr", 1e-12, 800, 1)
     ops.algorithm("ModifiedNewton")
 
-    for jj in range(500):
-        #     print(jj)
+    for _ in range(500):
         ops.analysis("Transient")
-        ok = ops.analyze(1, 0.01)
-        # print(ok,jj)
-
-    # ops.printA('-file','A.txt')
-
-    ops.wipeAnalysis
+        ops.analyze(1, 0.01)
 
     ops.wipeAnalysis()
     ops.numberer("Plain")
     ops.system("FullGeneral")
     ops.analysis("Transient")
 
-    # Mass
-    ops.integrator("GimmeMCK", 1.0, 0.0, 0.0)
-    ops.analyze(1, 0.0)
+    M = K = None
+    if get_MCK:
+        # Mass
+        ops.integrator("GimmeMCK", 1.0, 0.0, 0.0)
+        ops.analyze(1, 0.0)
 
-    # Number of equations in the model
-    N = ops.systemSize()  # Has to be done after analyze
+        # Number of equations in the model
+        N = ops.systemSize()  # Has to be done after analyze
 
-    M = ops.printA("-ret")  # Or use ops.printA('-file','M.out')
-    M = np.array(M)  # Convert the list to an array
-    M.shape = (N, N)  # Make the array an NxN matrix
+        M = ops.printA("-ret")  # Or use ops.printA('-file','M.out')
+        M = np.array(M)  # Convert the list to an array
+        M.reshape(N, N)
 
-    # Stiffness
-    ops.integrator("GimmeMCK", 0.0, 0.0, 1.0)
-    ops.analyze(1, 0.0)
-    K = ops.printA("-ret")
-    K = np.array(K)
-    K.shape = (N, N)
+        # Stiffness
+        ops.integrator("GimmeMCK", 0.0, 0.0, 1.0)
+        ops.analyze(1, 0.0)
+        K = ops.printA("-ret")
+        K = np.array(K)
+        K.shape = (N, N)
 
-    # Damping
-    ops.integrator("GimmeMCK", 0.0, 1.0, 0.0)
-    ops.analyze(1, 0.0)
-    C = ops.printA("-ret")
-    C = np.array(C)
-    C.shape = (N, N)
+        # Damping
+        # ops.integrator("GimmeMCK", 0.0, 1.0, 0.0)
+        # ops.analyze(1, 0.0)
+        # C = ops.printA("-ret")
+        # C = np.array(C)
+        # C.shape = (N, N)
 
-    np.savetxt(f"{data_folder}/M.txt", M)
-    np.savetxt(f"{data_folder}/C.txt", C)
-    np.savetxt(f"{data_folder}/K.txt", K)
-    return Y, K
+        # Get u history
+        with open(os.path.join(data_folder, "u1_tmp.txt")) as f:
+            u1 = np.loadtxt(f, max_rows=290)
+
+        with open(os.path.join(data_folder, "u3_tmp.txt")) as f:
+            u3 = np.loadtxt(f, max_rows=290)
+
+    return u1, u3, M, K
 
 
 def main():
