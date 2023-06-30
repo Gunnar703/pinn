@@ -13,8 +13,13 @@ from scipy.integrate import odeint
 from generate_data import get_data
 from msfnn import MsFNN
 
+import deepxde.optimizers
+
+deepxde.optimizers.LBFGS_options["maxiter"] = 75_000
+
 torch.backends.cuda.matmul.allow_tf32 = False
 checkpoint_interval = 10_000
+
 
 # Create the argument parser
 parser = argparse.ArgumentParser()
@@ -112,7 +117,11 @@ def scipy_ode(y, t):
         T_MAX**2
         / U_MAX
         * np.linalg.inv(data["M"])
-        @ (f - U_MAX / T_MAX * data["C"] @ u_t - U_MAX * data["K"] @ u)
+        @ (
+            f
+            - U_MAX / T_MAX * data["C"] @ u_t
+            - U_MAX * data["Y"] * data["k_basis"] @ u
+        )
     )
     return np.hstack((u_t.squeeze(), u_tt.squeeze())).squeeze()
 
@@ -171,9 +180,9 @@ def ode_sys(t, u):
     DU_DT = y_t * U_MAX / T_MAX
     D2U_DT2 = y_tt * U_MAX / T_MAX**2
 
-    mass_term = M @ D2U_DT2
-    damp_term = C @ DU_DT
-    stiff_term = k @ U
+    mass_term = torch.mm(M, D2U_DT2)
+    damp_term = torch.mm(C, DU_DT)
+    stiff_term = torch.mm(k, U)
     force_term = F
     residual = mass_term + damp_term + stiff_term - force_term
     residual = residual.permute((1, 0))
@@ -305,7 +314,7 @@ net = MsFNN(
 model = dde.Model(pde, net)
 model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=50_000, callbacks=[variable, plotter_callback, resampler]
+    iterations=100_000, callbacks=[variable, plotter_callback, resampler]
 )
 
 model.compile(optimizer="L-BFGS", external_trainable_variables=E)
@@ -332,12 +341,3 @@ dde.saveplot(
 model.save("model_files/msfnn")
 
 # %%
-# Knp = K.detach().cpu().numpy()
-# fig, ax = plt.subplots(nrows=1, ncols=2)
-# ax[0].imshow(data["K"] * 1e8)
-# ax[0].set_title("True K")
-# ax[0].axis('off')
-# ax[1].imshow(Knp)
-# ax[1].set_title("Predicted K")
-# ax[1].axis('off')
-# plt.savefig("media/K_comparison.png", bbox_inches="tight")

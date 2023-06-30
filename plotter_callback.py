@@ -67,7 +67,7 @@ class PlotterCallback(dde.callbacks.Callback):
             torch.Tensor(self.du_tt_3).to("cuda"),
         )
 
-    def on_epoch_end(self):
+    def on_epoch_begin(self):
         self.epoch += 1  # increment epoch counter
         if self.epoch % self.period != 0:
             return
