@@ -114,10 +114,10 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     ops.test("NormDispIncr", 1e-12, 800, 0)
     ops.algorithm("ModifiedNewton")
 
-    for jj in tqdm.trange(5000000):
+    for jj in tqdm.trange(500):
         #     print(jj)
         ops.analysis("Transient")
-        ok = ops.analyze(1, 0.000001)
+        ok = ops.analyze(1, 0.01)
         # print(ok,jj)
 
     # ops.printA('-file','A.txt')
