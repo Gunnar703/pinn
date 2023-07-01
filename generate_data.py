@@ -1,4 +1,5 @@
 import openseespy.opensees as ops
+import tqdm
 import numpy as np
 import os
 
@@ -46,10 +47,44 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
 
     ## Displacement Recorders
     ops.recorder(
+        "Node", "-file", f"{data_folder}/Disp_3_1_2D.txt", "-node", 3, "-dof", 1, "disp"
+    )
+    ops.recorder(
         "Node", "-file", f"{data_folder}/Disp_3_2D.txt", "-node", 3, "-dof", 2, "disp"
     )
     ops.recorder(
+        "Node", "-file", f"{data_folder}/Disp_4_1_2D.txt", "-node", 4, "-dof", 1, "disp"
+    )
+    ops.recorder(
         "Node", "-file", f"{data_folder}/Disp_4_2D.txt", "-node", 4, "-dof", 2, "disp"
+    )
+
+    ## Displacement Recorders
+    ops.recorder(
+        "Node",
+        "-file",
+        f"{data_folder}/Accel_3_1_2D.txt",
+        "-node",
+        3,
+        "-dof",
+        1,
+        "accel",
+    )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Accel_3_2D.txt", "-node", 3, "-dof", 2, "accel"
+    )
+    ops.recorder(
+        "Node",
+        "-file",
+        f"{data_folder}/Accel_4_1_2D.txt",
+        "-node",
+        4,
+        "-dof",
+        1,
+        "accel",
+    )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Accel_4_2D.txt", "-node", 4, "-dof", 2, "accel"
     )
 
     omega1 = 2 * np.pi * 1.5  # 1.5 hz first mode
@@ -76,18 +111,16 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     ops.numberer("RCM")
     ops.system("SparseGeneral")
     # ops.constraints('Transformation')
-    ops.test("NormDispIncr", 1e-12, 800, 1)
+    ops.test("NormDispIncr", 1e-12, 800, 0)
     ops.algorithm("ModifiedNewton")
 
-    for jj in range(500):
+    for jj in tqdm.trange(5000000):
         #     print(jj)
         ops.analysis("Transient")
-        ok = ops.analyze(1, 0.01)
+        ok = ops.analyze(1, 0.000001)
         # print(ok,jj)
 
     # ops.printA('-file','A.txt')
-
-    ops.wipeAnalysis
 
     ops.wipeAnalysis()
     ops.numberer("Plain")
@@ -122,4 +155,9 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     np.savetxt(f"{data_folder}/M.txt", M)
     np.savetxt(f"{data_folder}/C.txt", C)
     np.savetxt(f"{data_folder}/K.txt", K)
+
     return Y, K
+
+
+if __name__ == "__main__":
+    get_data()
