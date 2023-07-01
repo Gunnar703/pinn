@@ -184,8 +184,10 @@ def ode_sys(t, u):
     damp_term = torch.mm(C, DU_DT)
     stiff_term = torch.mm(k, U)
     force_term = F
-    residual = mass_term + damp_term + stiff_term - force_term
-    residual = residual.permute((1, 0))
+    residual = (
+        mass_term + damp_term + stiff_term - force_term
+    )  # (N_DIMENSIONS, N_SAMPLES)
+    residual = residual.permute((1, 0))  # (N_SAMPLES, N_DIMENSIONS)
     return residual / 1e5
 
 
@@ -309,6 +311,7 @@ net = MsFNN(
     activation="tanh",
     kernel_initializer="Glorot uniform",
     sigmas=[1, 10, 50],
+    dropout_rate=0.2,
 )
 
 model = dde.Model(pde, net)
@@ -319,13 +322,6 @@ losshistory, train_state = model.train(
 
 model.compile(optimizer="L-BFGS", external_trainable_variables=E)
 model.train(callbacks=[variable, plotter_callback])
-# model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
-# losshistory, train_state = model.train(
-#     iterations=50_000, callbacks=[variable, plotter_callback, resampler]
-# )
-
-# model.compile(optimizer="L-BFGS", external_trainable_variables=E)
-# model.train(callbacks=[variable, plotter_callback, resampler])
 
 dde.utils.external.save_best_state(
     train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
