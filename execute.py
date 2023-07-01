@@ -317,11 +317,11 @@ net = MsFNN(
 model = dde.Model(pde, net)
 model.compile(optimizer="adam", lr=5e-5, external_trainable_variables=E)
 losshistory, train_state = model.train(
-    iterations=10_000, callbacks=[variable, plotter_callback]
+    iterations=100_000, callbacks=[variable, plotter_callback]
 )
 
-model.compile(optimizer="L-BFGS", external_trainable_variables=E)
-model.train(callbacks=[variable, plotter_callback])
+# model.compile(optimizer="L-BFGS", external_trainable_variables=E)
+# model.train(callbacks=[variable, plotter_callback])
 
 dde.utils.external.save_best_state(
     train_state, "out_files/best_training_loss.dat", "out_files/best_test_loss.dat"
