@@ -68,7 +68,7 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
 
 
 # Define model
-layers = [1] + 3 * [32] + [4]
+layers = [1] + 5 * [32] + [4]
 sigmas = [1, 10, 50]
 model = PINN(layers, sigmas)
 model.load_ops_data()
