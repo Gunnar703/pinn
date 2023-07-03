@@ -223,7 +223,7 @@ class PINN(nn.Module):
             data_t = self.time.view(-1, 1).requires_grad_(True)
             u_pred = self.forward(data_t)
 
-            if epoch % 4000 == 0:
+            if epoch == 0:
                 phys_t = (
                     self.sample_physics_points(N_REGIONS=2, N_POINTS=1000)
                     .view(-1, 1)
@@ -249,11 +249,13 @@ class PINN(nn.Module):
                 u_pred_t[:, dim] = du_dt_current_data.squeeze()
 
             physics_loss = self.physics_loss(phys_t, u_pred_phys)
+            aphysical_loss = torch.max(torch.abs(physics_loss))
             data_loss1 = self.data_loss(u_pred_t[:, 1].squeeze(), self.node3_vel_y)
             data_loss2 = self.data_loss(u_pred_t[:, 3].squeeze(), self.node4_vel_y)
 
             loss = (
                 self.loss_weights[0] * physics_loss
+                + aphysical_loss
                 + self.loss_weights[1] * data_loss1
                 + self.loss_weights[2] * data_loss2
             )
