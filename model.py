@@ -249,7 +249,16 @@ class PINN(nn.Module):
                 u_pred_t[:, dim] = du_dt_current_data.squeeze()
 
             physics_loss = self.physics_loss(phys_t, u_pred_phys)
-            aphysical_loss = torch.max(torch.abs(physics_loss))
+
+            aphysical_loss = torch.autograd.grad(
+                physics_loss,
+                phys_t,
+                torch.ones_like(physics_loss),
+                retain_graph=True,
+                create_graph=True,
+            )[0].to(self.device)
+            aphysical_loss = torch.max(aphysical_loss)
+
             data_loss1 = self.data_loss(u_pred_t[:, 1].squeeze(), self.node3_vel_y)
             data_loss2 = self.data_loss(u_pred_t[:, 3].squeeze(), self.node4_vel_y)
 
