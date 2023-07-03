@@ -11,6 +11,10 @@ parser.add_argument("--plot-every")
 args = parser.parse_args()
 plot_every = int(args.plot_every)
 
+image_list = os.listdir("plots")
+if image_list:
+    [os.unlink(os.path.join("plots", image)) for image in image_list]
+
 
 # %%
 # Define callbacks
