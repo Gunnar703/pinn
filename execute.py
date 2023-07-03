@@ -40,25 +40,24 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
 
         axes.plot(t, v_pred[:, dim], label="Prediction")
 
-        match dim:
-            case 1:
-                axes.plot(
-                    t,
-                    model.node3_vel_y.detach().cpu(),
-                    marker=".",
-                    markersize=3,
-                    linestyle="None",
-                    label="Data",
-                )
-            case 3:
-                axes.plot(
-                    t,
-                    model.node4_vel_y.detach().cpu(),
-                    marker=".",
-                    markersize=3,
-                    linestyle="None",
-                    label="Data",
-                )
+        if dim == 1:
+            axes.plot(
+                t,
+                model.node3_vel_y.detach().cpu(),
+                marker=".",
+                markersize=3,
+                linestyle="None",
+                label="Data",
+            )
+        elif dim == 3:
+            axes.plot(
+                t,
+                model.node4_vel_y.detach().cpu(),
+                marker=".",
+                markersize=3,
+                linestyle="None",
+                label="Data",
+            )
     fig.suptitle("Epoch = %d\nE = %.5g" % (epoch, E * 1e8))
     plt.savefig(os.path.join("plots", "%d.png" % epoch))
     plt.close()
