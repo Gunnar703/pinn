@@ -1,4 +1,4 @@
-# %%
+f  # %%
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,7 +73,7 @@ sigmas = [1, 10, 50]
 model = PINN(layers, sigmas)
 model.load_ops_data()
 model.compile(
-    torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-3),
+    torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-5),
     callbacks=[epoch_logger, plotter],
     loss_weights=[1e-12, 1e-12, 1e2, 1e2],
 )
