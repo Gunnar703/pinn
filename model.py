@@ -264,9 +264,9 @@ class PINN(nn.Module):
 
             loss = (
                 self.loss_weights[0] * physics_loss
-                + aphysical_loss
-                + self.loss_weights[1] * data_loss1
-                + self.loss_weights[2] * data_loss2
+                + self.loss_weights[1] * aphysical_loss
+                + self.loss_weights[2] * data_loss1
+                + self.loss_weights[3] * data_loss2
             )
             loss.backward()
 
