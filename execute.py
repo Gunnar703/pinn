@@ -9,7 +9,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--plot-every")
 args = parser.parse_args()
-plot_every = args.plot_every
+plot_every = int(args.plot_every)
 
 
 # %%
