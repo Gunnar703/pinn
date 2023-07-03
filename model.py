@@ -106,6 +106,13 @@ class PINN(nn.Module):
         self.K_basis = np.loadtxt(os.path.join(data_file, "k_basis.txt"))
         self.a0, self.a1 = np.loadtxt(os.path.join(data_file, "Damp_param.txt"))
 
+        self.node3_disp_y = np.loadtxt(
+            os.path.join(data_file, "Disp_3_2D.txt"), max_rows=max_rows
+        )
+        self.node4_disp_y = np.loadtxt(
+            os.path.join(data_file, "Disp_4_2D.txt"), max_rows=max_rows
+        )
+
         self.node3_vel_y = np.loadtxt(
             os.path.join(data_file, "Vel_3_2D.txt"), max_rows=max_rows
         )
@@ -115,7 +122,7 @@ class PINN(nn.Module):
 
         ## Normalize
         self.T_MAX = self.time.max()
-        self.U_MAX = max(self.node3_vel_y.max(), self.node4_vel_y.max())
+        self.U_MAX = max(self.node3_disp_y.max(), self.node4_disp_y.max())
 
         self.time /= self.T_MAX
         self.node3_vel_y *= self.T_MAX / self.U_MAX
@@ -131,6 +138,8 @@ class PINN(nn.Module):
             self.K_basis,
             self.node3_vel_y,
             self.node4_vel_y,
+            self.node3_disp_y,
+            self.node4_disp_y,
         ) = (
             torch.Tensor(self.M).to(self.device),
             torch.Tensor(self.C).to(self.device),
@@ -140,6 +149,8 @@ class PINN(nn.Module):
             torch.Tensor(self.K_basis).to(self.device),
             torch.Tensor(self.node3_vel_y).to(self.device),
             torch.Tensor(self.node4_vel_y).to(self.device),
+            torch.Tensor(self.node3_disp_y).to(self.device),
+            torch.Tensor(self.node4_disp_y).to(self.device),
         )
 
     def physics_loss(self, x, y):
