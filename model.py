@@ -103,7 +103,7 @@ class PINN(nn.Module):
         self.Y = np.loadtxt(os.path.join(data_file, "Y.txt"))
         self.time = np.loadtxt(os.path.join(data_file, "t.txt"), max_rows=max_rows)
         self.load = np.loadtxt(os.path.join(data_file, "load.txt"), max_rows=max_rows)
-        self.K_basis = np.loadtxt(os.path.join(data_file, "K_basis.txt"))
+        self.K_basis = np.loadtxt(os.path.join(data_file, "k_basis.txt"))
         self.a0, self.a1 = np.loadtxt(os.path.join(data_file, "Damp_param.txt"))
 
         self.node3_vel_y = np.loadtxt(
