@@ -275,6 +275,7 @@ class PINN(nn.Module):
                     model=self,
                     epoch=epoch,
                     physics_loss=physics_loss * self.loss_weights[0],
+                    aphysical_loss=aphysical_loss * self.loss_weights[1],
                     data_loss=[
                         data_loss1 * self.loss_weights[2],
                         data_loss2 * self.loss_weights[3],

@@ -18,12 +18,12 @@ if image_list:
 
 # %%
 # Define callbacks
-def epoch_logger(epoch, model, physics_loss, data_loss, **kw):
+def epoch_logger(epoch, model, physics_loss, data_loss, aphysical_loss, **kw):
     if epoch % 1000 != 0:
         return
     print(
-        "Epoch %d: Physics Loss %.4g, Node3YVel Loss %.4g, Node4YVel Loss %.4g, E = %.4g"
-        % (epoch, physics_loss, data_loss[0], data_loss[1], model.E())
+        "Epoch %d: Physics Loss %.4g, Grad(l_p) Loss %.4g, Node3YVel Loss %.4g, Node4YVel Loss %.4g, E = %.4g"
+        % (epoch, physics_loss, aphysical_loss, data_loss[0], data_loss[1], model.E())
     )
 
 
@@ -75,7 +75,7 @@ model.load_ops_data()
 model.compile(
     torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-4),
     callbacks=[epoch_logger, plotter],
-    loss_weights=[1, 1, 1, 1],
+    loss_weights=[1e-10, 1e-10, 1e-2, 1e-3],
 )
 model.train(iterations=int(2e6))
 
