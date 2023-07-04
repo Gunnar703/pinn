@@ -254,36 +254,35 @@ class PINN(nn.Module):
 
             physics_loss = self.physics_loss(phys_t, u_pred_phys)
 
-            aphysical_loss = torch.autograd.grad(
-                physics_loss,
-                phys_t,
-                torch.ones_like(physics_loss),
-                retain_graph=True,
-                create_graph=True,
-            )[0].to(self.device)
-            aphysical_loss = torch.max(aphysical_loss)
+            # aphysical_loss = torch.autograd.grad(
+            #     physics_loss,
+            #     phys_t,
+            #     torch.ones_like(physics_loss),
+            #     retain_graph=True,
+            #     create_graph=True,
+            # )[0].to(self.device)
+            # aphysical_loss = torch.max(aphysical_loss)
 
             data_loss1 = self.data_loss(u_pred_t[:, 1].squeeze(), self.node3_vel_y)
             data_loss2 = self.data_loss(u_pred_t[:, 3].squeeze(), self.node4_vel_y)
 
-            loss = (
-                self.loss_weights[0] * physics_loss
-                + self.loss_weights[1] * aphysical_loss
-                + self.loss_weights[2] * data_loss1
-                + self.loss_weights[3] * data_loss2
-            )
+            losses = [physics_loss, data_loss1, data_loss2]
+            weighted_losses = [w * l for w, l in zip(self.loss_weights, losses)]
+
+            loss = sum(weighted_losses)
+            # loss = (
+            #     self.loss_weights[0] * physics_loss
+            #     # + self.loss_weights[1] * aphysical_loss
+            #     + self.loss_weights[2] * data_loss1
+            #     + self.loss_weights[3] * data_loss2
+            # )
             loss.backward()
 
             for callback in self.callbacks:
                 callback(
                     model=self,
                     epoch=epoch,
-                    physics_loss=physics_loss * self.loss_weights[0],
-                    aphysical_loss=aphysical_loss * self.loss_weights[1],
-                    data_loss=[
-                        data_loss1 * self.loss_weights[2],
-                        data_loss2 * self.loss_weights[3],
-                    ],
+                    weighted_losses=weighted_losses,
                     u_pred_t=u_pred_t,
                     u_pred=u_pred,
                     data_t=data_t,
