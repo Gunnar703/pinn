@@ -22,7 +22,7 @@ class PINN(nn.Module):
         self.sigmas = sigmas
         self.dropout_rate = dropout_rate
         self.callbacks = []
-        self.loss_weights = [1, 1, 1]
+        self.loss_weights = [1, 1, 1, 1]
 
         self.criterion = nn.MSELoss()
 
@@ -276,8 +276,8 @@ class PINN(nn.Module):
                     epoch=epoch,
                     physics_loss=physics_loss * self.loss_weights[0],
                     data_loss=[
-                        data_loss1 * self.loss_weights[1],
-                        data_loss2 * self.loss_weights[2],
+                        data_loss1 * self.loss_weights[2],
+                        data_loss2 * self.loss_weights[3],
                     ],
                     u_pred_t=u_pred_t,
                     u_pred=u_pred,
