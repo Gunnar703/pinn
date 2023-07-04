@@ -75,7 +75,7 @@ model.load_ops_data()
 model.compile(
     torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-4),
     callbacks=[epoch_logger, plotter],
-    loss_weights=[1e-10, 1e-10, 1e-2, 1e-3],
+    loss_weights=[1e-10, 1e-10, 1, 1],
 )
 model.train(iterations=int(2e6))
 
