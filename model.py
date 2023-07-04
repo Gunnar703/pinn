@@ -195,7 +195,11 @@ class PINN(nn.Module):
             y_t[:, dim] = du_dt_current.squeeze()
             y_tt[:, dim] = d2u_dt2_current.squeeze()
 
-        Y, Y_T, Y_TT = y.permute((1, 0)), y_t.permute((1, 0)), y_tt.permute((1, 0))
+        Y, Y_T, Y_TT = (
+            y.permute((1, 0)) * self.U_MAX,
+            y_t.permute((1, 0)) * self.U_MAX / self.T_MAX,
+            y_tt.permute((1, 0)) * self.U_MAX / self.T_MAX**2,
+        )
 
         residual = M @ Y_TT + C @ Y_T + K @ Y - F
         return self.criterion(residual, residual * 0)
