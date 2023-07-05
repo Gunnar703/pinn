@@ -73,7 +73,7 @@ class CNNPINN(nn.Module):
 
     def forward(self, x):
         return (
-            self.layers(x) ** 2 * 1e8
+            self.layers(x) ** 2
         )  # squared to keep E positive, multiplied by 1e8 to keep E small
 
     def phys_loss(self, img, pred_label):
@@ -83,7 +83,7 @@ class CNNPINN(nn.Module):
             pos = u[0, :].reshape(-1, 1).double().to(self.device)
             vel = u[1, :].reshape(-1, 1).double().to(self.device)
 
-            K, C = self.compute_kc(E)
+            K, C = self.compute_kc(E * 1e8)
             acc = self.M_inv @ (load * self.load_mask - K @ pos - C @ vel)
             return torch.cat((vel, acc), dim=1).permute((1, 0))
 
