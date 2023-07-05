@@ -14,6 +14,7 @@ class PINNDataset(Dataset):
         self.device = device
 
     def __len__(self):
+        return 2
         return len(self.img_labels)
 
     def __getitem__(self, idx):
