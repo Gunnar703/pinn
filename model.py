@@ -291,5 +291,6 @@ class PINN(nn.Module):
                     data_t=data_t,
                 )
 
+            if self.lr_scheduler:
+                self.lr_scheduler.step(loss)
             self.optimizer.step()
-            self.lr_scheduler.step() if self.lr_scheduler else None
