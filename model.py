@@ -50,7 +50,7 @@ class CNNPINN(nn.Module):
         ).to(device)
         self.M_inv = torch.linalg.inv(self.M).to(device)
         self.k_basis = torch.as_tensor(
-            np.loadtxt(os.path.join("data", "k_basis.txt"))
+            np.loadtxt(os.path.join("data", "K_basis.txt"))
         ).to(device)
         self.a0, self.a1 = np.loadtxt(os.path.join("data", "Damp_params.txt"))
 
