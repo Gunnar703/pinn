@@ -23,6 +23,7 @@ class PINN(nn.Module):
         self.dropout_rate = dropout_rate
         self.callbacks = []
         self.loss_weights = [1, 1, 1, 1]
+        self.lr_scheduler = None
 
         self.criterion = nn.MSELoss()
 
@@ -95,6 +96,8 @@ class PINN(nn.Module):
             self.callbacks = kwargs["callbacks"]
         if "loss_weights" in kwargs:
             self.loss_weights = kwargs["loss_weights"]
+        if "lr_scheduler" in kwargs:
+            self.lr_scheduler = kwargs["lr_scheduler"]
 
     def load_ops_data(self, data_file: str = "data", max_rows: int = 290):
         self.M = np.loadtxt(os.path.join(data_file, "M.txt"))
@@ -289,3 +292,4 @@ class PINN(nn.Module):
                 )
 
             self.optimizer.step()
+            self.lr_scheduler.step() if self.lr_scheduler else None

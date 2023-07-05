@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from model import PINN
+from utils import make_training_plot
 import os
 import argparse
 
@@ -71,15 +72,21 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
 
 
 # Define model
-layers = [1] + 3 * [64] + [4]
+layers = [1] + 5 * [64] + [4]
 sigmas = [1, 10, 50]
 model = PINN(layers, sigmas)
 model.load_ops_data()
+optimizer = torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-2)
 model.compile(
-    torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-4),
+    optimizer,
     callbacks=[epoch_logger, plotter],
     loss_weights=[1e-10, 1, 1],
+    lr_scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=optimizer, factor=0.1, patience=10000, min_lr=1e-6
+    ),
 )
 model.train(iterations=int(2e6))
+
+make_training_plot()
 
 # %%
