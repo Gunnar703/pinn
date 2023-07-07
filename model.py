@@ -24,12 +24,13 @@ class PINN(nn.Module):
         self.callbacks = []
         self.loss_weights = [1, 1, 1, 1]
         self.lr_scheduler = None
+        self.loss_history = {"epochs": []}
 
         self.criterion = nn.MSELoss()
 
         self.optimizer = None
 
-        self.a = torch.rand(1).to(device).requires_grad_(True)
+        # self.a = torch.rand(1).to(device).requires_grad_(True)
 
         self.b = []
         for sigma in self.sigmas:
@@ -49,8 +50,8 @@ class PINN(nn.Module):
             device
         )
 
-    def E(self):
-        return self.a**2
+    # def E(self):
+    #     return self.a**2
 
     def forward(self, inputs):
         x = inputs
@@ -103,24 +104,24 @@ class PINN(nn.Module):
         self.M = np.loadtxt(os.path.join(data_file, "M.txt"))
         self.C = np.loadtxt(os.path.join(data_file, "C.txt"))
         self.K = np.loadtxt(os.path.join(data_file, "K.txt"))
-        self.Y = np.loadtxt(os.path.join(data_file, "Y.txt"))
+        # self.Y = np.loadtxt(os.path.join(data_file, "Y.txt"))
         self.time = np.loadtxt(os.path.join(data_file, "t.txt"), max_rows=max_rows)
         self.load = np.loadtxt(os.path.join(data_file, "load.txt"), max_rows=max_rows)
-        self.K_basis = np.loadtxt(os.path.join(data_file, "k_basis.txt"))
-        self.a0, self.a1 = np.loadtxt(os.path.join(data_file, "Damp_param.txt"))
-
-        self.node3_disp_y = np.loadtxt(
-            os.path.join(data_file, "Disp_3_2D.txt"), max_rows=max_rows
-        )
-        self.node4_disp_y = np.loadtxt(
-            os.path.join(data_file, "Disp_4_2D.txt"), max_rows=max_rows
-        )
+        # self.K_basis = np.loadtxt(os.path.join(data_file, "k_basis.txt"))
+        # self.a0, self.a1 = np.loadtxt(os.path.join(data_file, "Damp_param.txt"))
 
         self.node3_vel_y = np.loadtxt(
             os.path.join(data_file, "Vel_3_2D.txt"), max_rows=max_rows
         )
+        self.node3_vel_x = np.loadtxt(
+            os.path.join(data_file, "Vel_3_1_2D.txt"), max_rows=max_rows
+        )
+
         self.node4_vel_y = np.loadtxt(
             os.path.join(data_file, "Vel_4_2D.txt"), max_rows=max_rows
+        )
+        self.node4_vel_x = np.loadtxt(
+            os.path.join(data_file, "Vel_4_1_2D.txt"), max_rows=max_rows
         )
 
         ## Normalize
@@ -138,7 +139,7 @@ class PINN(nn.Module):
             self.K,
             self.time,
             self.load,
-            self.K_basis,
+            # self.K_basis,
             self.node3_vel_y,
             self.node4_vel_y,
             self.node3_disp_y,
@@ -149,7 +150,7 @@ class PINN(nn.Module):
             torch.Tensor(self.K).to(self.device),
             torch.Tensor(self.time).to(self.device),
             torch.Tensor(self.load).to(self.device),
-            torch.Tensor(self.K_basis).to(self.device),
+            # torch.Tensor(self.K_basis).to(self.device),
             torch.Tensor(self.node3_vel_y).to(self.device),
             torch.Tensor(self.node4_vel_y).to(self.device),
             torch.Tensor(self.node3_disp_y).to(self.device),
@@ -158,8 +159,10 @@ class PINN(nn.Module):
 
     def physics_loss(self, x, y):
         M = self.M
-        K = self.E() * self.K_basis * 1e8
-        C = self.a0 * M + self.a1 * K
+        # K = self.E() * self.K_basis * 1e8
+        K = self.K
+        # C = self.a0 * M + self.a1 * K
+        C = self.C
 
         F = y * 0
         F[:, 3] = torch.Tensor(
@@ -232,7 +235,7 @@ class PINN(nn.Module):
 
             if epoch == 0:
                 phys_t = (
-                    self.sample_physics_points(N_REGIONS=2, N_POINTS=1000)
+                    self.sample_physics_points(N_REGIONS=1, N_POINTS=1500)
                     .view(-1, 1)
                     .requires_grad_(True)
                 )

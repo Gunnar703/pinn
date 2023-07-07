@@ -3,17 +3,21 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from model import PINN
-from utils import make_training_plot
+import utils
 import os
 import argparse
 
 torch.manual_seed(123)
 
 plot_every = 100
-parser = argparse.ArgumentParser()
-parser.add_argument("--plot-every")
-args = parser.parse_args()
-plot_every = int(args.plot_every)
+if not utils.is_notebook():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--plot-every")
+    args = parser.parse_args()
+    plot_every = int(args.plot_every)
+
+if not os.path.exists("plots"):
+    os.mkdir("plots")
 
 image_list = os.listdir("plots")
 if image_list:
@@ -22,23 +26,37 @@ if image_list:
 
 # %%
 # Define callbacks
-def epoch_logger(epoch, model, weighted_losses, **kw):
+def epoch_logger(epoch, weighted_losses, **kw):
     if epoch % 1000 != 0:
         return
     print(
-        "Epoch %d: Physics Loss %.4g, Node3YVel Loss %.4g, Node4YVel Loss %.4g, E = %.4g"
-        % (epoch, weighted_losses[0], weighted_losses[1], weighted_losses[2], model.E())
+        "Epoch %d: Physics Loss %.4g, Node3YVel Loss %.4g, Node4YVel Loss %.4g"
+        % (epoch, weighted_losses[0], weighted_losses[1], weighted_losses[2])
     )
 
 
-if not os.path.exists("plots"):
-    os.mkdir("plots")
+def loss_logger(model, epoch, weighted_losses, **kw):
+    if epoch == 0:
+        model.loss_history = {
+            "epochs": [],
+            "physics_loss": [],
+            "node3_yvel_loss": [],
+            "node4_yvel_loss": [],
+        }
+    if epoch % 500 != 0:
+        return
+
+    model.loss_history["epochs"].append(epoch)
+    model.loss_history["physics_loss"].append(weighted_losses[0].detach().cpu())
+    model.loss_history["node3_yvel_loss"].append(weighted_losses[1].detach().cpu())
+    model.loss_history["node4_yvel_loss"].append(weighted_losses[2].detach().cpu())
+    utils.make_loss_plot(model.loss_history)
 
 
-def plotter(epoch, model, data_t, u_pred_t, **kw):
+def plotter(model, epoch, data_t, u_pred_t, **kw):
     if epoch % plot_every != 0:
         return
-    E = model.E()
+    # E = model.E()
     t = data_t.detach().cpu()
     v_pred = u_pred_t.detach().cpu()
 
@@ -48,7 +66,9 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
 
         axes.plot(t, v_pred[:, dim], label="Prediction")
 
-        if dim == 1:
+        if dim == 0:
+            axes.plot(t, model.node3_vel_x, linestyle="--", color="gray")
+        elif dim == 1:
             axes.plot(
                 t,
                 model.node3_vel_y.detach().cpu(),
@@ -57,6 +77,8 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
                 linestyle="None",
                 label="Data",
             )
+        elif dim == 2:
+            axes.plot(t, model.node4_vel_x, linestyle="--", color="gray")
         elif dim == 3:
             axes.plot(
                 t,
@@ -66,8 +88,8 @@ def plotter(epoch, model, data_t, u_pred_t, **kw):
                 linestyle="None",
                 label="Data",
             )
-    fig.suptitle("Epoch = %d\nE = %.5g" % (epoch, E * 1e8))
-    plt.savefig(os.path.join("plots", "%d.png" % epoch))
+    fig.suptitle("Epoch = %d" % (epoch))
+    plt.savefig(os.path.join("media/plots", "%d.png" % epoch))
     plt.close()
 
 
@@ -76,17 +98,18 @@ layers = [1] + 5 * [64] + [4]
 sigmas = [1, 10, 50]
 model = PINN(layers, sigmas)
 model.load_ops_data()
-optimizer = torch.optim.Adam(list(model.parameters()) + [model.a], lr=1e-2)
+optimizer = torch.optim.Adam(list(model.parameters()), lr=1e-2)
 model.compile(
     optimizer,
-    callbacks=[epoch_logger, plotter],
+    callbacks=[epoch_logger, loss_logger, plotter],
     loss_weights=[1e-10, 1, 1],
     lr_scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer, factor=0.1, patience=10000, min_lr=1e-6
     ),
 )
-model.train(iterations=int(2e6))
+model.train(iterations=int(5e4))
 
-make_training_plot()
+utils.make_training_plot()
+utils.make_loss_plot(model.loss_history)
 
 # %%

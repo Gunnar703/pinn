@@ -1,5 +1,19 @@
 import os
 import imageio
+from matplotlib import pyplot as plt
+
+
+def is_notebook() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
 
 
 def make_training_plot(
@@ -19,8 +33,32 @@ def make_training_plot(
         file_path = os.path.join(folder_path, file_name)
         image = imageio.imread(file_path)
         frames.append(image)
+        os.unlink(file_path)
 
     # Save the frames as a GIF file
     imageio.mimsave(
         output_path, frames, duration=duration
     )  # Adjust the duration as desired
+
+
+def make_loss_plot(loss_history: dict[str:list], output_path="media/loss_plot.png"):
+    plt.figure()
+
+    markers = ["8", "s", "*"]
+    x = loss_history["epochs"]
+
+    i = 0
+    for k, v in loss_history.items():
+        if k == "epochs":
+            continue
+        plt.plot(x, v, label=k, marker=markers[i % len(markers)])
+        i += 1
+
+    plt.yscale("log")
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Loss History")
+    plt.legend()
+    plt.savefig(output_path, bbox_inches="tight")
+    plt.close()
