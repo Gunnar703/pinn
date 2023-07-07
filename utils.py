@@ -33,12 +33,15 @@ def make_training_plot(
         file_path = os.path.join(folder_path, file_name)
         image = imageio.imread(file_path)
         frames.append(image)
-        os.unlink(file_path)
 
     # Save the frames as a GIF file
     imageio.mimsave(
         output_path, frames, duration=duration
     )  # Adjust the duration as desired
+
+    for file_name in file_names:
+        file_path = os.path.join(folder_path, file_name)
+        os.unlink(file_path)
 
 
 def make_loss_plot(loss_history: dict[str:list], output_path="media/loss_plot.png"):

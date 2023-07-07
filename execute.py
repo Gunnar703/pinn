@@ -102,7 +102,7 @@ optimizer = torch.optim.Adam(list(model.parameters()), lr=1e-2)
 model.compile(
     optimizer,
     callbacks=[epoch_logger, loss_logger, plotter],
-    loss_weights=[1e-10, 1, 1],
+    loss_weights=[1e-11, 1, 1e-1],
     lr_scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer, factor=0.1, patience=10000, min_lr=1e-6
     ),
