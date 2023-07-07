@@ -16,12 +16,12 @@ if not utils.is_notebook():
     args = parser.parse_args()
     plot_every = int(args.plot_every)
 
-if not os.path.exists("plots"):
-    os.mkdir("plots")
+if not os.path.exists("media/plots"):
+    os.makedirs("media/plots")
 
-image_list = os.listdir("plots")
+image_list = os.listdir("media/plots")
 if image_list:
-    [os.unlink(os.path.join("plots", image)) for image in image_list]
+    [os.unlink(os.path.join("media/plots", image)) for image in image_list]
 
 
 # %%
