@@ -26,7 +26,7 @@ class PINN(nn.Module):
         self.lr_scheduler = None
         self.loss_history = {"epochs": []}
 
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.L1Loss()
 
         self.optimizer = None
 
