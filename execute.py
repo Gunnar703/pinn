@@ -98,7 +98,7 @@ layers = [1] + 5 * [64] + [4]
 sigmas = [1, 10, 50]
 model = PINN(layers, sigmas)
 model.load_ops_data()
-optimizer = torch.optim.Adam(list(model.parameters()), lr=1e-2)
+optimizer = torch.optim.Adam(list(model.parameters()), lr=1)
 model.compile(
     optimizer,
     callbacks=[epoch_logger, loss_logger, plotter],
