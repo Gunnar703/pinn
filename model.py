@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
@@ -13,7 +14,7 @@ class CNNPINN(nn.Module):
         self.criterion = nn.MSELoss()
         self.losses = [
             # lambda img, pred, true: self.criterion(pred, true),
-            lambda img, pred, true: self.phys_loss(img, pred),
+            lambda img, pred, true: self.phys_loss(img, pred, true),
         ]  # call signature: <function>(img, predicted_label, true_label)
         self.callbacks = []
         self.optimizer = None
@@ -76,7 +77,16 @@ class CNNPINN(nn.Module):
             self.layers(x) ** 2
         )  # squared to keep E positive, multiplied by 1e8 to keep E small
 
-    def phys_loss(self, img, pred_label):
+    def validate_phys_reconstruction(self):
+        train_features, train_labels = next(iter(self.dataloader))
+        idx = np.random.randint(0, len(train_features))
+
+        img = train_features[idx]
+        label = train_labels[idx]
+
+        self.phys_loss(img, self.forward(img.unsqueeze(0)), label, True)
+
+    def phys_loss(self, img, pred_label, val_label, validate_mode=False):
         u0 = torch.zeros(2, 4).to(self.device)
 
         def diff(u, t, E, load):
@@ -84,16 +94,24 @@ class CNNPINN(nn.Module):
             vel = u[1, :].reshape(-1, 1).double().to(self.device)
 
             K, C = self.compute_kc(E * 1e8)
-            acc = self.M_inv @ (load * self.load_mask - K @ pos - C @ vel)
+            acc = (
+                self.dataloader.T_MAX**2
+                / self.dataloader.U_MAX
+                * self.M_inv
+                @ (
+                    load * self.load_mask
+                    - self.dataloader.U_MAX * K @ pos
+                    - self.dataloader.U_MAX / self.dataloader.T_MAX * C @ vel
+                )
+            )
             return torch.cat((vel, acc), dim=1).permute((1, 0))
 
-        integrated_vel = torch.zeros((2, 290)).to(self.device)
-
-        def rk_get_loss(u0, img, E):
+        def rk_get(u0, img, E):
+            integrated_vel = torch.zeros((2, 290)).to(self.device)
             u = u0
             for idx in range(len(self.t) - 1):
-                integrated_vel[0, idx] = u[1, 1].squeeze()
-                integrated_vel[1, idx] = u[1, 3].squeeze()
+                integrated_vel[0, idx + 1] = u[1, 1].squeeze()
+                integrated_vel[1, idx + 1] = u[1, 3].squeeze()
 
                 dt = self.t[idx + 1] - self.t[idx]
                 t = self.t[idx]
@@ -106,15 +124,31 @@ class CNNPINN(nn.Module):
 
                 du = 1 / 6 * (k0 + 2 * k1 + 2 * k2 + k3)
                 u = u + du
-
+                print(integrated_vel)
             return integrated_vel
 
-        predicted_images = []
-        for cur_img, cur_E in zip(img, pred_label):
-            predicted_images.append(rk_get_loss(u0, cur_img, cur_E).unsqueeze(0))
-        pred_batch = torch.cat(predicted_images, dim=0).to(self.device)
-        loss = self.criterion(pred_batch, img)
-        return loss
+        if not validate_mode:
+            predicted_images = []
+            for cur_img, cur_E in zip(img, pred_label):
+                predicted_images.append(rk_get(u0, cur_img, cur_E).unsqueeze(0))
+            pred_batch = torch.cat(predicted_images, dim=0).to(self.device)
+            loss = self.criterion(pred_batch, img)
+            return loss
+
+        true_img = img
+        val_img = rk_get(u0, img, val_label)
+
+        fig, ax = plt.subplots(1, 2)
+
+        print("True: %s\nPredicted: %s" % (true_img.shape, val_img.shape))
+        ax[0].imshow(true_img.cpu(), interpolation="None")
+        ax[0].set_title("True Image")
+        ax[0].axis("auto")
+        ax[1].imshow(val_img.detach().cpu(), interpolation="None")
+        ax[1].set_title("RK Constructed Image")
+        ax[1].axis("auto")
+        fig.suptitle("E = %.5g" % val_label)
+        plt.savefig("media/validation_image.png")
 
     def train(self, n_iterations: int = 100):
         tr = tqdm(range(n_iterations))

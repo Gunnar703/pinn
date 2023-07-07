@@ -13,6 +13,14 @@ class PINNDataset(Dataset):
         ]
         self.device = device
 
+        self.U_MAX = 1
+        self.T_MAX = 1
+
+        first_img = self.__getitem__(0)[0]
+
+        self.T_MAX = max(np.loadtxt(os.path.join("data", "t.txt")))
+        self.U_MAX = torch.max(first_img)
+
     def __len__(self):
         return 2
         return len(self.img_labels)
@@ -21,7 +29,11 @@ class PINNDataset(Dataset):
         img_path = os.path.join(
             self.img_dir, "%s.dat" % str(self.img_labels[idx]).replace(".", "_")
         )
-        image = torch.Tensor(np.loadtxt(img_path)).permute(1, 0).to(self.device)
+        image = (
+            torch.Tensor(np.loadtxt(img_path)).permute(1, 0).to(self.device)
+            * self.T_MAX
+            / self.U_MAX
+        )
         label = self.img_labels[idx]
         return image, label
 
