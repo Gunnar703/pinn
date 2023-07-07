@@ -205,8 +205,8 @@ def system(t, u):
 
     residual = (
         torch.mm(M, y_tt.permute((1, 0)))
-        + torch.mm(torch.abs(C), y_t.permute((1, 0)))
-        + torch.mm(torch.abs(K), y.permute((1, 0)))
+        + torch.mm(C, y_t.permute((1, 0)))
+        + torch.mm(K, y.permute((1, 0)))
         - F.permute((1, 0))
     ).permute((1, 0))
 
