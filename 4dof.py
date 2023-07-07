@@ -270,8 +270,8 @@ model.compile(
     loss_weights=[1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5],
 )
 
-if os.path.exists("model_files/train_further.pt"):
-    model.restore("model_files/train_further.pt")
+# if os.path.exists("model_files/train_further.pt"):
+#     model.restore("model_files/train_further.pt")
 
 variable = dde.callbacks.VariableValue(
     [E_learned], period=checkpoint_interval, filename="variables.dat"
@@ -303,15 +303,3 @@ print("E = ", E_learned.detach())
 
 print("True E vector\n", "----------")
 print("E = ", data["Y"])
-
-## Train with L-BFGS
-print("Training with L-BFGS")
-model.compile(
-    optimizer="L-BFGS",
-    external_trainable_variables=[E_learned],
-    loss_weights=[n * 1e-5 for n in [1e-12, 1e-10, 1e5, 1e5, 1e5, 1e5]],
-)
-losshistory, train_state = model.train(callbacks=[variable, plotter_callback])
-model.save("model_files/model")
-dde.utils.saveplot(losshistory, train_state, issave=True, isplot=True)
-print("Done.")
