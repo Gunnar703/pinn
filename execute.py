@@ -107,7 +107,7 @@ model.compile(
         optimizer=optimizer, factor=0.1, patience=10000, min_lr=1e-6
     ),
 )
-model.train(iterations=int(5e4))
+model.train(iterations=int(1e6))
 
 utils.make_training_plot()
 utils.make_loss_plot(model.loss_history)
