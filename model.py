@@ -26,29 +26,30 @@ class PINN(nn.Module):
         self.lr_scheduler = None
         self.loss_history = {"epochs": []}
 
-        self.criterion = nn.L1Loss()
+        self.criterion = nn.MSELoss()
 
         self.optimizer = None
 
         # self.a = torch.rand(1).to(device).requires_grad_(True)
 
-        self.b = []
-        for sigma in self.sigmas:
-            self.b.append(
-                torch.normal(
-                    mean=0, std=sigma, size=(layer_sizes[0], layer_sizes[1] // 2)
-                ).to(device)
-            )
+        # self.b = []
+        # for sigma in self.sigmas:
+        #     self.b.append(
+        #         torch.normal(
+        #             mean=0, std=sigma, size=(layer_sizes[0], layer_sizes[1] // 2)
+        #         ).to(device)
+        #     )
 
         self.linears = []
-        for i in range(2, len(layer_sizes) - 1):
+        for i in range(1, len(layer_sizes) - 1):
             self.linears.append(
                 nn.Linear(layer_sizes[i - 1], layer_sizes[i]).to(device)
             )
 
-        self._dense = nn.Linear(layer_sizes[-2] * len(sigmas), layer_sizes[-1]).to(
-            device
-        )
+        # self._dense = nn.Linear(layer_sizes[-2] * len(sigmas), layer_sizes[-1]).to(
+        #     device
+        # )
+        self._dense = nn.Linear(layer_sizes[-2], layer_sizes[-1]).to(device)
 
     # def E(self):
     #     return self.a**2
@@ -57,25 +58,26 @@ class PINN(nn.Module):
         x = inputs
 
         # fourier feature layer
-        yb = [
-            self._fourier_feature_forward(x, self.b[i]) for i in range(len(self.sigmas))
-        ]
-        y = [elem[0] for elem in yb]
-        self.fourier_feature_weights = [elem[1] for elem in yb]
+        # yb = [
+        #     self._fourier_feature_forward(x, self.b[i]) for i in range(len(self.sigmas))
+        # ]
+        # y = [elem[0] for elem in yb]
+        # self.fourier_feature_weights = [elem[1] for elem in yb]
 
         # fully-connected layers
-        y = [self._fully_connected_forward(_y) for _y in y]
+        # y = [self._fully_connected_forward(_y) for _y in y]
+        y = self._fully_connected_forward(x)
 
         # concatenate all the fourier features
-        y = torch.cat(y, axis=1)
+        # y = torch.cat(y, axis=1)
         y = self._dense(y)
         return y
 
-    def _fourier_feature_forward(self, y, b):
-        y = torch.cat(
-            [torch.cos(torch.matmul(y, b)), torch.sin(torch.matmul(y, b))], dim=1
-        )
-        return y, b
+    # def _fourier_feature_forward(self, y, b):
+    #     y = torch.cat(
+    #         [torch.cos(torch.matmul(y, b)), torch.sin(torch.matmul(y, b))], dim=1
+    #     )
+    #     return y, b
 
     def _fully_connected_forward(self, y):
         for linear in self.linears:
