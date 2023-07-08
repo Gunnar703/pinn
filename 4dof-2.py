@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import deepxde as dde
 import numpy as np
 import torch
@@ -55,3 +56,24 @@ model.compile("adam", lr=0.001, metrics=["l2 relative error"])
 losshistory, train_state = model.train(iterations=20000)
 
 dde.saveplot(losshistory, train_state, issave=True, isplot=True)
+
+t = np.linspace(data.t[0], data.t[-1])
+
+y_true = func(t)
+y_pred = model.predict(t)
+
+fig, ax = plt.subplots(4, 1, figsize=(8, 12), sharex=True)
+for dim in range(4):
+    axes = ax[dim]
+
+    axes.plot(t, y_true[:, dim], linestyle="--", color="gray", label="Solution")
+    axes.plot(0, 0, linestyle="None", color="orange", label="Given Data")
+    axes.plot(t, y_pred[:, dim], color="green")
+
+    if dim < 2:
+        axes.legend()
+    axes.ylabel(r"$\dot{u}_%d(t)$" % dim)
+fig.suptitle("Model Prediction")
+fig.supxlabel(r"Time, $t$")
+
+plt.savefig("prediction.png", bbox_inches="tight")
