@@ -74,4 +74,4 @@ def F(t):
     f_quasiscalar = force_magnitude(t.detach().cpu()).squeeze()
     F_[:, force_idx] = -f_quasiscalar
     F_ = torch.Tensor(F_)
-    return F_.to(device)
+    return F_.to(device).squeeze()
