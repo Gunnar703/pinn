@@ -18,12 +18,14 @@ def ode_system(x, y):
     M d2y/dx2 + C dy/dt + K y - F == 0
     """
     y_t, y_tt = derivatives(x, y)
-    return (
+    residual = (
         torch.mm(data.TORCH_M, y_tt.t())
         + torch.mm(data.TORCH_C, y_t.t())
         + torch.mm(data.TORCH_K, y.t())
         - data.F(x).t()
     )
+    print(residual)
+    return residual
 
 
 def boundary(_, on_initial):
@@ -37,7 +39,6 @@ def func(x):
             for n in range(data.u.shape[0])
         ]
     )
-    print("(func) u:", u.shape)
     return u
 
 
