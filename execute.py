@@ -307,11 +307,11 @@ resampler = dde.callbacks.PDEPointResampler(period=1_000)
 
 # %%
 net = MsFNN(
-    layer_sizes=[1] + 3 * [32] + [4],
+    layer_sizes=[1] + 20 * [32] + [4],
     activation="tanh",
     kernel_initializer="Glorot uniform",
     sigmas=[1, 10, 50],
-    dropout_rate=0.2,
+    dropout_rate=0.1,
 )
 
 model = dde.Model(pde, net)

@@ -43,8 +43,13 @@ def func(x):
     return u.reshape(-1, 4)
 
 
+ic_func = lambda inputs, outputs, dim: derivatives(inputs, outputs)[:, dim].reshape(
+    -1, 1
+)
+
 geom = dde.geometry.TimeDomain(data.t_norm[0], data.t_norm[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
+ic += [dde.icbc.OperatorBC]
 pde = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
 
 layer_size = [1] + [64] * 6 + [4]
