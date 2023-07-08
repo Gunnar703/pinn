@@ -46,16 +46,16 @@ M = data["M"]
 C = data["C"]
 K = data["K"]
 u_t = np.array([
-    [data["Vel_3_1_2D"]],
-    [data["Vel_3_2D"]],
-    [data["Vel_4_1_2D"]],
-    [data["Vel_4_2D"]],
+    data["Vel_3_1_2D"],
+    data["Vel_3_2D"],
+    data["Vel_4_1_2D"],
+    data["Vel_4_2D"],
 ])
 u = np.array([
-    [data["Disp_3_1_2D"]],
-    [data["Disp_3_2D"]],
-    [data["Disp_4_1_2D"]],
-    [data["Disp_4_2D"]],
+    data["Disp_3_1_2D"],
+    data["Disp_3_2D"],
+    data["Disp_4_1_2D"],
+    data["Disp_4_2D"],
 ])
 t = data["t"]
 load = data["load"]
