@@ -30,10 +30,10 @@ def boundary(_, on_initial):
 def func(x):
     print(x.shape)
     print(data.u.shape)
-    u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
-    u = np.array([u])
-    u = u.T
-    return u
+    # u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
+    # u = np.array([u])
+    # u = u.T
+    return np.interp(x, data.t, data.u.T)
 
 geom = dde.geometry.TimeDomain(data.t[0], data.t[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
