@@ -47,14 +47,14 @@ geom = dde.geometry.TimeDomain(data.t_norm[0], data.t_norm[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
 pde = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
 
-layer_size = [1] + [50] * 3 + [4]
+layer_size = [1] + [64] * 6 + [4]
 activation = "tanh"
 initializer = "Glorot uniform"
 net = MsFNN(layer_size, activation, initializer, [1, 20, 50])
 
 model = dde.Model(pde, net)
 model.compile("adam", lr=5e-5, metrics=["l2 relative error"])
-losshistory, train_state = model.train(iterations=30000)
+losshistory, train_state = model.train(iterations=int(1e6))
 
 dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
