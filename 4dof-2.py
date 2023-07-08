@@ -28,8 +28,9 @@ def boundary(_, on_initial):
 
 
 def func(x):
-    print(x.shape)
-    print(data.u.shape)
+    print("x", x.shape)
+    print("t", data.t.shape)
+    print("u", data.u.T.shape)
     # u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
     # u = np.array([u])
     # u = u.T
