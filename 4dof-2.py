@@ -29,7 +29,7 @@ def boundary(_, on_initial):
 
 def func(x):
     u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
-    u = np.array([u])
+    u = np.array(u)
     u = u.T
     return u
 
