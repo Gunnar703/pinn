@@ -35,14 +35,14 @@ def func(x):
 
 geom = dde.geometry.TimeDomain(data.t[0], data.t[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
-data = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
+pde = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
 
 layer_size = [1] + [50] * 3 + [4]
 activation = "tanh"
 initializer = "Glorot uniform"
 net = dde.nn.FNN(layer_size, activation, initializer)
 
-model = dde.Model(data, net)
+model = dde.Model(pde, net)
 model.compile("adam", lr=0.001, metrics=["l2 relative error"])
 losshistory, train_state = model.train(iterations=20000)
 
