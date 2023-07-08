@@ -17,9 +17,9 @@ def ode_system(x, y):
     """
     y_t, y_tt = derivatives(x, y)
     return (
-        torch.mm(data.TORCH_M, y_tt.T)
-        + torch.mm(data.TORCH_C, y_t.T)
-        + torch.mm(data.TORCH_K, y.T)
+        torch.mm(data.TORCH_M, y_tt.transpose())
+        + torch.mm(data.TORCH_C, y_t.transpose())
+        + torch.mm(data.TORCH_K, y.transpose())
         - data.F(x)
     )
 
