@@ -37,6 +37,7 @@ def func(x):
             for n in range(data.u.shape[0])
         ]
     )
+    print("(func) u:", u.shape)
     return u
 
 
