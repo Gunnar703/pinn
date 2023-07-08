@@ -67,8 +67,8 @@ k_basis = data["k_basis"]
 Y = data["Y"]
 a0, a1 = data["Damp_param"]
 
-T_MAX = max(t)
-U_MAX = max(u)
+T_MAX = t.max()
+U_MAX = u.max()
 
 t_norm = t / T_MAX
 u_norm = u / U_MAX
