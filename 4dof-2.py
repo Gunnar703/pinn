@@ -15,6 +15,7 @@ def ode_system(x, y):
     """ODE system.
     M d2y/dx2 + C dy/dt + K y - F == 0
     """
+    print(data.TORCH_M.shape, y_tt.t().shape)
     y_t, y_tt = derivatives(x, y)
     return (
         torch.mm(data.TORCH_M, y_tt.t())
