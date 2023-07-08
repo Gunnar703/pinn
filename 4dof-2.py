@@ -20,10 +20,10 @@ def ode_system(x, y):
     """
     y_t, y_tt = derivatives(x, y)
     residual = (
-        torch.mm(data.TORCH_M, y_tt.t())
-        + torch.mm(data.TORCH_C, y_t.t())
-        + torch.mm(data.TORCH_K, y.t())
-        - data.F(x).t()
+        torch.mm(data.TORCH_M, y_tt.t()) * data.U_MAX / data.T_MAX**2
+        + torch.mm(data.TORCH_C, y_t.t()) * data.U_MAX / data.T_MAX
+        + torch.mm(data.TORCH_K, y.t()) * data.U_MAX
+        - data.F(x * data.T_MAX).t()
     )
     return residual.t()
 
@@ -35,14 +35,14 @@ def boundary(_, on_initial):
 def func(x):
     u = np.hstack(
         [
-            np.interp(x.squeeze(), data.t, data.u[n, :]).reshape(-1, 1)
+            np.interp(x.squeeze(), data.t_norm, data.u_norm[n, :]).reshape(-1, 1)
             for n in range(data.u.shape[0])
         ]
     )
     return u.reshape(-1, 4)
 
 
-geom = dde.geometry.TimeDomain(data.t[0], data.t[-1])
+geom = dde.geometry.TimeDomain(data.t_norm[0], data.t_norm[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
 pde = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
 
@@ -53,11 +53,11 @@ net = dde.nn.FNN(layer_size, activation, initializer)
 
 model = dde.Model(pde, net)
 model.compile("adam", lr=5e-5, metrics=["l2 relative error"])
-losshistory, train_state = model.train(iterations=int(1e6))
+losshistory, train_state = model.train(iterations=30000)
 
 dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
-t = np.linspace(data.t[0], data.t[-1], 300)
+t = np.linspace(data.t_norm[0], data.t_norm[-1], 300)
 
 y_true = func(t.reshape(-1, 1))
 y_pred = model.predict(t.reshape(-1, 1))

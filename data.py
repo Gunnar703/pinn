@@ -45,29 +45,41 @@ force_idx = 3
 M = data["M"]
 C = data["C"]
 K = data["K"]
-u_t = np.array([
-    data["Vel_3_1_2D"],
-    data["Vel_3_2D"],
-    data["Vel_4_1_2D"],
-    data["Vel_4_2D"],
-])
-u = np.array([
-    data["Disp_3_1_2D"],
-    data["Disp_3_2D"],
-    data["Disp_4_1_2D"],
-    data["Disp_4_2D"],
-])
+u_t = np.array(
+    [
+        data["Vel_3_1_2D"],
+        data["Vel_3_2D"],
+        data["Vel_4_1_2D"],
+        data["Vel_4_2D"],
+    ]
+)
+u = np.array(
+    [
+        data["Disp_3_1_2D"],
+        data["Disp_3_2D"],
+        data["Disp_4_1_2D"],
+        data["Disp_4_2D"],
+    ]
+)
 t = data["t"]
 load = data["load"]
 k_basis = data["k_basis"]
 Y = data["Y"]
 a0, a1 = data["Damp_param"]
 
+T_MAX = max(t)
+U_MAX = max(u)
+
+t_norm = t / T_MAX
+u_norm = u / U_MAX
+u_t_norm = u_t * T_MAX / U_MAX
+
 # torch versions
 TORCH_M = torch.Tensor(M).to(device)
 TORCH_C = torch.Tensor(C).to(device)
 TORCH_K = torch.Tensor(K).to(device)
 TORCH_k_basis = torch.Tensor(k_basis).to(device)
+
 
 def F(t):
     F_ = np.zeros((t.shape[0], 4))
