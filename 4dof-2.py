@@ -59,8 +59,8 @@ dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
 t = np.linspace(data.t[0], data.t[-1])
 
-y_true = func(t)
-y_pred = model.predict(t)
+y_true = func(t.reshape(-1, 1))
+y_pred = model.predict(t.reshape(-1, 1))
 
 fig, ax = plt.subplots(4, 1, figsize=(8, 12), sharex=True)
 for dim in range(4):
@@ -72,7 +72,7 @@ for dim in range(4):
 
     if dim < 2:
         axes.legend()
-    axes.ylabel(r"$\dot{u}_%d(t)$" % dim)
+    axes.ylabel(r"$u_%d(t)$" % dim)
 fig.suptitle("Model Prediction")
 fig.supxlabel(r"Time, $t$")
 
