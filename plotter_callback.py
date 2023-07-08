@@ -7,7 +7,7 @@ import torch
 
 class PlotterCallback(dde.callbacks.Callback):
     def __init__(
-        self, period, filepath, data, E_learned, t_max, u_max, plot_residual=False
+        self, period, filepath, data, E_learned, u_max, plot_residual=False, t_max=1
     ):
         super().__init__()
         self.period = period

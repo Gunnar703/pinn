@@ -35,27 +35,6 @@ args = parser.parse_args()
 # Access the value of the command line argument
 checkpoint_interval = args.checkpoint_interval
 
-# %% [markdown]
-# ## Import Data
-#
-# ### Non-dimensionalization
-# ODE is non-dimensionalized as follows.
-# Let
-# $$u = u_cu^*$$
-# $$t = t_ct^*$$
-# $$E = E_cE^*$$
-# Therefore,
-# $$\frac{du}{dt} = \frac{u_c}{t}\frac{du^*}{dt^*}$$
-# $$\frac{d^2u}{dt^2} = \frac{u_c}{t^2}\frac{d^2u^*}{dt^{*2}}$$
-# $$\frac{u_c}{t^2} [M] \frac{d^2u^*}{dt^{*2}} + \frac{u_c}{t} [C] \frac{du^*}{dt^*} + u_c[K]u^* = F\left(t_ct^*\right)$$
-# $$\iff$$
-# $$\frac{u_c}{t^2} [M] \frac{d^2u^*}{dt^{*2}} + \frac{u_c}{t} \left( a_0[M] + a_1E_cE^*[K_b] \right) \frac{du^*}{dt^*} + u_cE_cE^*[K_b]u^* = F\left(t_ct^*\right)$$
-# Further let
-# $$u_c\equiv \max{u}$$
-# $$t_c\equiv \max{t}$$
-# $$E_c\equiv \max{\mathbb{E}}$$
-# where $\mathbb{E}$ is the space of all reasonable values of $E$. (chosen here to be $10^8$).
-# Now all network inputs, outputs, and ODE parameters are on the interval $[0,1]$
 
 # %%
 fn = "data"
@@ -68,15 +47,14 @@ data = {
 }
 
 # Normalize Data
-T_MAX = data["t"].max()
+# T_MAX = data["t"].max()
 U_MAX = max(data["Disp_3_2D"].max(), data["Disp_4_2D"].max())
 
-data["t"] /= T_MAX
 for name in data:
     if "Disp" in name:
         data[name] /= U_MAX
     elif "Vel" in name:
-        data[name] *= T_MAX / U_MAX
+        data[name] /= U_MAX
 
 # For convenience
 a0, a1 = data["Damp_param"]
@@ -88,8 +66,8 @@ Kb = torch.Tensor(data["k_basis"])
 
 # Define interpolation of F. Returns M x N_DIM tensor.
 def load(t: torch.Tensor):
-    x = t * T_MAX
-    xp = data["t"] * T_MAX
+    x = t
+    xp = data["t"]
     fp = data["load"]
     if isinstance(t, torch.Tensor):
         x = x.detach().cpu().numpy().squeeze()
@@ -114,14 +92,9 @@ def scipy_ode(y, t):
     f = -load(np.array([t]))
 
     u_tt = (
-        T_MAX**2
-        / U_MAX
+        U_MAX
         * np.linalg.inv(data["M"])
-        @ (
-            f
-            - U_MAX / T_MAX * data["C"] @ u_t
-            - U_MAX * data["Y"] * data["k_basis"] @ u
-        )
+        @ (f - U_MAX * data["C"] @ u_t - U_MAX * data["Y"] * data["k_basis"] @ u)
     )
     return np.hstack((u_t.squeeze(), u_tt.squeeze())).squeeze()
 
@@ -177,8 +150,8 @@ def ode_sys(t, u):
     y_tt = y_tt.permute((1, 0))
 
     U = y * U_MAX
-    DU_DT = y_t * U_MAX / T_MAX
-    D2U_DT2 = y_tt * U_MAX / T_MAX**2
+    DU_DT = y_t * U_MAX
+    D2U_DT2 = y_tt * U_MAX
 
     mass_term = torch.mm(M, D2U_DT2)
     damp_term = torch.mm(C, DU_DT)
@@ -294,12 +267,11 @@ plotter_callback = PlotterCallback(
     filepath="plots/training",
     data=data,
     E_learned=E,
-    t_max=T_MAX,
     u_max=U_MAX,
     plot_residual=False,
 )
 
-resampler = dde.callbacks.PDEPointResampler(period=1_000)
+resampler = dde.callbacks.PDEPointResampler(period=5_000)
 
 
 # %% [markdown]
@@ -315,9 +287,9 @@ net = MsFNN(
 )
 
 model = dde.Model(pde, net)
-model.compile(optimizer="adam", lr=5e-5)
+model.compile(optimizer="adam", lr=5e-5, loss_weights=[1, 1e1, 1])
 losshistory, train_state = model.train(
-    iterations=100_000, callbacks=[variable, plotter_callback]
+    iterations=40_000, callbacks=[variable, plotter_callback]
 )
 
 # model.compile(optimizer="L-BFGS", external_trainable_variables=E)
