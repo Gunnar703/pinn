@@ -83,6 +83,15 @@ class PlotterCallback(dde.callbacks.Callback):
 
             if dim == 0:
                 ax.plot(self.t, self.data["Vel_3_1_2D"], label="Solution", color="gray")
+                ax.plot(
+                    self.t,
+                    self.data["Vel_3_1_2D"],
+                    linestyle="None",
+                    marker="+",
+                    markersize=2,
+                    label="Data",
+                    color="orange",
+                )
             elif dim == 1:
                 ax.plot(self.t, self.data["Vel_3_2D"], label="Solution", color="gray")
                 ax.plot(
@@ -98,15 +107,6 @@ class PlotterCallback(dde.callbacks.Callback):
                 ax.plot(self.t, self.data["Vel_4_1_2D"], label="Solution", color="gray")
             elif dim == 3:
                 ax.plot(self.t, self.data["Vel_4_2D"], label="Solution", color="gray")
-                ax.plot(
-                    self.t,
-                    self.data["Vel_4_2D"],
-                    linestyle="None",
-                    marker="+",
-                    markersize=2,
-                    label="Data",
-                    color="orange",
-                )
 
             ax.set_ylabel(r"$\dot{u}_%s(t)$" % (dim))
             if dim == 3:
