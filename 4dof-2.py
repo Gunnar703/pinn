@@ -24,7 +24,7 @@ def ode_system(x, y):
         + torch.mm(data.TORCH_K, y.t())
         - data.F(x).t()
     )
-    print(residual)
+    print(residual.shape)
     return residual
 
 
@@ -39,7 +39,7 @@ def func(x):
             for n in range(data.u.shape[0])
         ]
     )
-    return u
+    return u.reshape(-1, 4)
 
 
 geom = dde.geometry.TimeDomain(data.t[0], data.t[-1])
