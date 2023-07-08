@@ -289,7 +289,7 @@ net = MsFNN(
 model = dde.Model(pde, net)
 model.compile(optimizer="adam", lr=1e-5, loss_weights=[1, 1, 1])
 losshistory, train_state = model.train(
-    iterations=80_000, callbacks=[variable, plotter_callback]
+    iterations=500_000, callbacks=[variable, plotter_callback]
 )
 
 # model.compile(optimizer="L-BFGS", external_trainable_variables=E)
