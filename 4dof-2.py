@@ -52,12 +52,12 @@ initializer = "Glorot uniform"
 net = dde.nn.FNN(layer_size, activation, initializer)
 
 model = dde.Model(pde, net)
-model.compile("adam", lr=0.001, metrics=["l2 relative error"])
-losshistory, train_state = model.train(iterations=20000)
+model.compile("adam", lr=5e-5, metrics=["l2 relative error"])
+losshistory, train_state = model.train(iterations=int(1e6))
 
 dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
-t = np.linspace(data.t[0], data.t[-1])
+t = np.linspace(data.t[0], data.t[-1], 300)
 
 y_true = func(t.reshape(-1, 1))
 y_pred = model.predict(t.reshape(-1, 1))
@@ -68,9 +68,9 @@ for dim in range(4):
 
     axes.plot(t, y_true[:, dim], linestyle="--", color="gray", label="Solution")
     axes.plot(0, 0, linestyle="None", color="orange", label="Given Data")
-    axes.plot(t, y_pred[:, dim], color="green")
+    axes.plot(t, y_pred[:, dim], color="green", label="Prediction")
 
-    if dim < 2:
+    if dim == 0:
         axes.legend()
     axes.set_ylabel(r"$u_%d(t)$" % dim)
 fig.suptitle("Model Prediction")
