@@ -72,7 +72,7 @@ for dim in range(4):
 
     if dim < 2:
         axes.legend()
-    axes.ylabel(r"$u_%d(t)$" % dim)
+    axes.set_ylabel(r"$u_%d(t)$" % dim)
 fig.suptitle("Model Prediction")
 fig.supxlabel(r"Time, $t$")
 
