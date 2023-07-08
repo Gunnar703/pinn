@@ -24,8 +24,7 @@ def ode_system(x, y):
         + torch.mm(data.TORCH_K, y.t())
         - data.F(x).t()
     )
-    print(residual.shape)
-    return residual
+    return residual.t()
 
 
 def boundary(_, on_initial):
