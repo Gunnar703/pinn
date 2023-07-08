@@ -7,8 +7,8 @@ import data
 def derivatives(x, y):
     y_t, y_tt = [y * 0] * 2
     for dim in range(y.shape[1]):
-        y_t[:, dim] = dde.grad.jacobian(y, x, i=dim)
-        y_tt[:, dim] = dde.grad.hessian(y, x, component=dim)
+        y_t[:, dim] = dde.grad.jacobian(y, x, i=dim).squeeze()
+        y_tt[:, dim] = dde.grad.hessian(y, x, component=dim).squeeze()
     return y_t, y_tt
 
 def ode_system(x, y):
@@ -28,9 +28,6 @@ def boundary(_, on_initial):
 
 
 def func(x):
-    print("x", x.squeeze().shape)
-    print("t", data.t.shape)
-    print("u", data.u.T.shape)
     u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
     u = np.array([u])
     u = u.T
