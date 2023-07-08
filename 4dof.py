@@ -9,7 +9,7 @@ import deepxde as dde
 import torch
 import torch.nn as nn
 from scipy.integrate import solve_ivp
-from generate_data import get_data
+from ops import get_data
 import argparse
 
 from plotter_callback import PlotterCallback
