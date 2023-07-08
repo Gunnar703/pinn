@@ -4,12 +4,14 @@ import torch
 
 import data
 
+
 def derivatives(x, y):
     y_t, y_tt = [y * 0] * 2
     for dim in range(y.shape[1]):
         y_t[:, dim] = dde.grad.jacobian(y, x, i=dim).squeeze()
         y_tt[:, dim] = dde.grad.hessian(y, x, component=dim).squeeze()
     return y_t, y_tt
+
 
 def ode_system(x, y):
     """ODE system.
@@ -23,15 +25,20 @@ def ode_system(x, y):
         - data.F(x).t()
     )
 
+
 def boundary(_, on_initial):
     return on_initial
 
 
 def func(x):
-    u = [np.interp(x.squeeze(), data.t, data.u[n, :]) for n in range(data.u.shape[0])]
-    u = np.array(u)
-    u = u.T
+    u = np.hstack(
+        [
+            np.interp(x.squeeze(), data.t, data.u[n, :]).reshape(-1, 1)
+            for n in range(data.u.shape[0])
+        ]
+    )
     return u
+
 
 geom = dde.geometry.TimeDomain(data.t[0], data.t[-1])
 ic = [dde.icbc.IC(geom, lambda x: 0, boundary, component=n) for n in range(4)]
