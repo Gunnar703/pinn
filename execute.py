@@ -47,14 +47,14 @@ data = {
 }
 
 # Normalize Data
-# T_MAX = data["t"].max()
+T_MAX = data["t"].max()
 U_MAX = max(data["Disp_3_2D"].max(), data["Disp_4_2D"].max())
 
 for name in data:
     if "Disp" in name:
-        data[name] /= U_MAX
+        data[name] *= 1 / U_MAX
     elif "Vel" in name:
-        data[name] /= U_MAX
+        data[name] *= T_MAX / U_MAX
 
 # For convenience
 a0, a1 = data["Damp_param"]
@@ -150,8 +150,8 @@ def ode_sys(t, u):
     y_tt = y_tt.permute((1, 0))
 
     U = y * U_MAX
-    DU_DT = y_t * U_MAX
-    D2U_DT2 = y_tt * U_MAX
+    DU_DT = y_t * U_MAX / T_MAX
+    D2U_DT2 = y_tt * U_MAX / T_MAX**2
 
     mass_term = torch.mm(M, D2U_DT2)
     damp_term = torch.mm(C, DU_DT)
@@ -268,6 +268,7 @@ plotter_callback = PlotterCallback(
     data=data,
     E_learned=E,
     u_max=U_MAX,
+    t_max=T_MAX,
     plot_residual=False,
 )
 
