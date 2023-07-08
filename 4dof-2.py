@@ -20,7 +20,7 @@ def ode_system(x, y):
         torch.matmul(data.TORCH_M, y_tt.t())
         + torch.matmul(data.TORCH_C, y_t.t())
         + torch.matmul(data.TORCH_K, y.t())
-        - data.F(x).t()
+        - data.F(x).t().squeeze()
     )
 
 def boundary(_, on_initial):
