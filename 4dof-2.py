@@ -16,12 +16,11 @@ def ode_system(x, y):
     M d2y/dx2 + C dy/dt + K y - F == 0
     """
     y_t, y_tt = derivatives(x, y)
-    print(data.TORCH_M.shape, y_tt.t().shape)
     return (
-        torch.mm(data.TORCH_M, y_tt.t())
-        + torch.mm(data.TORCH_C, y_t.t())
-        + torch.mm(data.TORCH_K, y.t())
-        - data.F(x)
+        torch.matmul(data.TORCH_M, y_tt.t())
+        + torch.matmul(data.TORCH_C, y_t.t())
+        + torch.matmul(data.TORCH_K, y.t())
+        - data.F(x).t()
     )
 
 def boundary(_, on_initial):
