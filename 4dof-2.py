@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import deepxde as dde
 import numpy as np
 import torch
-
 import data
+
+from msfnn import MsFNN
 
 
 def derivatives(x, y):
@@ -49,7 +50,7 @@ pde = dde.data.PDE(geom, ode_system, ic, 35, 2, solution=func, num_test=100)
 layer_size = [1] + [50] * 3 + [4]
 activation = "tanh"
 initializer = "Glorot uniform"
-net = dde.nn.FNN(layer_size, activation, initializer)
+net = MsFNN(layer_size, activation, initializer, [1, 20, 50])
 
 model = dde.Model(pde, net)
 model.compile("adam", lr=5e-5, metrics=["l2 relative error"])
