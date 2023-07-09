@@ -1,1 +1,1 @@
-from .data import get_data, ops_data
+from .data import ops_data

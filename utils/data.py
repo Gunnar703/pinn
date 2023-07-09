@@ -3,6 +3,8 @@ import os as os
 import numpy as np
 import os
 
+import torch
+
 
 def get_data(data_folder="data", nu=0.3, Vs=150):
     if not os.path.isdir(data_folder):
@@ -133,7 +135,8 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
 
 
 class Data:
-    def __init__(self):
+    def __init__(self, device):
+        self.device = device
         try:
             self.import_data()
         except:
@@ -167,19 +170,64 @@ class Data:
                 data["Disp_4_2D"],
             ]
         )
+        self.du_dt = np.array(
+            [
+                data["Vel_3_1_2D"],
+                data["Vel_3_2D"],
+                data["Vel_4_1_2D"],
+                data["Vel_4_2D"],
+            ]
+        )
         self.Y = data["Y"]
 
         self.f = np.zeros_like(self.u)
         self.f[3, :] = -self.load_magnitude
 
         self.dt = self.time[1] - self.time[0]
+        self.n = len(self.time)
+
+        self.TORCH_M = torch.Tensor(self.M).to(self.device)
+        self.TORCH_C = torch.Tensor(self.C).to(self.device)
+        self.TORCH_K = torch.Tensor(self.K).to(self.device)
+        self.TORCH_k_basis = torch.Tensor(self.k_basis).to(self.device)
 
     def get_fourier_transforms(self):
-        self.u_hat = np.fft.fft(self.u)
-        self.f_hat = np.fft.fft(self.f)
+        self.u_hat = np.fft.fft(self.u)  # Fourier amplitudes
+        self.f_hat = np.fft.fft(self.f)  # Fourier amplitudes
 
-        n = self.u_hat.shape[1]
-        self.xi = np.fft.fftfreq(n, d=self.dt)
+        N = self.n
+        L = np.ptp(self.time)
+
+        k = self.u_hat[0, :].real * 0
+        k[: int(N / 2)] = np.arange(0, N / 2)
+        k[int(N / 2 + 1) :] = np.arange(-N / 2 + 1, 0)
+        k[int(N / 2)] = 0
+
+        self.xi = k * 2 * np.pi / L  # Nyquist frequency
+
+        self.TORCH_U_HAT = torch.complex(
+            torch.Tensor(self.u_hat.real), torch.Tensor(self.u_hat.imag)
+        ).to(self.device)
+        self.TORCH_F_HAT = torch.complex(
+            torch.Tensor(self.f_hat.real), torch.Tensor(self.f_hat.imag)
+        ).to(self.device)
+        self.TORCH_XI = torch.Tensor(self.xi).to(self.device)
+
+    def get_force_spectral_tensor(self, xi: torch.Tensor) -> torch.Tensor:
+        if isinstance(xi, torch.Tensor):
+            if xi.requires_grad:
+                xi = xi.detach().cpu().numpy()
+            else:
+                xi = xi.cpu().numpy()
+
+        idx = self.xi.argsort()
+        load_hat = np.interp(xi, self.xi[idx], self.f_hat[3, idx])
+
+        f_hat = np.zeros([len(xi), 4], dtype=np.complex128)
+        f_hat[:, 3] = load_hat
+        return torch.Tensor(f_hat.real).to(self.device), torch.Tensor(f_hat.imag).to(
+            self.device
+        )
 
 
-ops_data = Data()
+ops_data = Data("cuda")
