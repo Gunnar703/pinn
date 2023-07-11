@@ -1,4 +1,3 @@
-import openseespy.opensees as ops
 import os as os
 import numpy as np
 import os
@@ -7,6 +6,10 @@ import torch
 
 
 def get_data(data_folder="data", nu=0.3, Vs=150):
+    global ops
+
+    import openseespy.opensees as ops
+
     if not os.path.isdir(data_folder):
         os.mkdir(data_folder)
 
@@ -59,6 +62,34 @@ def get_data(data_folder="data", nu=0.3, Vs=150):
     )
     ops.recorder(
         "Node", "-file", f"{data_folder}/Disp_4_1_2D.txt", "-node", 4, "-dof", 1, "disp"
+    )
+
+    ## Acceleration Recorders
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Accel_3_2D.txt", "-node", 3, "-dof", 2, "accel"
+    )
+    ops.recorder(
+        "Node", "-file", f"{data_folder}/Accel_4_2D.txt", "-node", 4, "-dof", 2, "accel"
+    )
+    ops.recorder(
+        "Node",
+        "-file",
+        f"{data_folder}/Accel_3_1_2D.txt",
+        "-node",
+        3,
+        "-dof",
+        1,
+        "accel",
+    )
+    ops.recorder(
+        "Node",
+        "-file",
+        f"{data_folder}/Accel_4_1_2D.txt",
+        "-node",
+        4,
+        "-dof",
+        1,
+        "accel",
     )
 
     omega1 = 2 * np.pi * 1.5  # 1.5 hz first mode
@@ -139,11 +170,12 @@ class Data:
         self.device = device
         try:
             self.import_data()
-        except:
+        except Exception as e:
+            print(e)
             get_data()
             self.import_data()
 
-        self.get_fourier_transforms()
+        # self.get_fourier_transforms()
 
     def import_data(self):
         fn = "data"
@@ -178,6 +210,14 @@ class Data:
                 data["Vel_4_2D"],
             ]
         )
+        self.d2u_dt2 = np.array(
+            [
+                data["Accel_3_1_2D"],
+                data["Accel_3_2D"],
+                data["Accel_4_1_2D"],
+                data["Accel_4_2D"],
+            ]
+        )
         self.Y = data["Y"]
 
         self.f = np.zeros_like(self.u)
@@ -186,32 +226,36 @@ class Data:
         self.dt = self.time[1] - self.time[0]
         self.n = len(self.time)
 
+        self.f_adjusted = self.M @ self.d2u_dt2 + self.C @ self.du_dt + self.K @ self.u
+
         self.TORCH_M = torch.Tensor(self.M).to(self.device)
         self.TORCH_C = torch.Tensor(self.C).to(self.device)
         self.TORCH_K = torch.Tensor(self.K).to(self.device)
         self.TORCH_k_basis = torch.Tensor(self.k_basis).to(self.device)
 
-    def get_fourier_transforms(self):
-        self.u_hat = np.fft.fft(self.u)  # Fourier amplitudes
-        self.f_hat = np.fft.fft(self.f)  # Fourier amplitudes
+    # def get_fourier_transforms(self):
+    #     self.u_hat = np.fft.fft(self.u)  # Fourier amplitudes
+    #     self.f_hat = np.fft.fft(self.f)  # Fourier amplitudes
+    #     self.f_hat_adjusted = np.fft.fft(self.f_adjusted)  # Fourier amplitudes
 
-        N = self.n
-        L = np.ptp(self.time)
+    #     N = self.n
+    #     self.L = np.ptp(self.time)
 
-        k = self.u_hat[0, :].real * 0
-        k[: int(N / 2)] = np.arange(0, N / 2)
-        k[int(N / 2 + 1) :] = np.arange(-N / 2 + 1, 0)
-        k[int(N / 2)] = 0
+    #     # k = self.u_hat[0, :].real * 0
+    #     # k[: int(N / 2)] = np.arange(0, N / 2)
+    #     # k[int(N / 2 + 1) :] = np.arange(-N / 2 + 1, 0)
+    #     # k[int(N / 2)] = 0
 
-        self.xi = k * 2 * np.pi / L  # Nyquist frequency
+    #     self.xi = np.fft.fftfreq(N, self.dt)  # Nyquist frequency
+    #     # self.xi = k
 
-        self.TORCH_U_HAT = torch.complex(
-            torch.Tensor(self.u_hat.real), torch.Tensor(self.u_hat.imag)
-        ).to(self.device)
-        self.TORCH_F_HAT = torch.complex(
-            torch.Tensor(self.f_hat.real), torch.Tensor(self.f_hat.imag)
-        ).to(self.device)
-        self.TORCH_XI = torch.Tensor(self.xi).to(self.device)
+    #     self.TORCH_U_HAT = torch.complex(
+    #         torch.Tensor(self.u_hat.real), torch.Tensor(self.u_hat.imag)
+    #     ).to(self.device)
+    #     self.TORCH_F_HAT = torch.complex(
+    #         torch.Tensor(self.f_hat.real), torch.Tensor(self.f_hat.imag)
+    #     ).to(self.device)
+    #     self.TORCH_XI = torch.Tensor(self.xi).to(self.device)
 
     def get_force_spectral_tensor(self, xi: torch.Tensor) -> torch.Tensor:
         if isinstance(xi, torch.Tensor):
